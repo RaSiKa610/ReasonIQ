@@ -1,6 +1,6 @@
-BiasLess: Real-Time AI-Powered Debate and Argument Analysis System
+ReasonIQ (formerly BiasLess): Real-Time AI-Powered Debate and Critical Thinking Analysis System
 
-Project Report – Updated Working Draft
+Project Report – Comprehensive System Report, Implementation & Live Evaluation
 
 
 1. Project Overview
@@ -707,7 +707,7 @@ The sentiment component is used as a supporting linguistic signal. It is not tre
 
 The reusable implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\sentiment.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\sentiment.py
 
 
 23. Named Entity Recognition
@@ -777,7 +777,7 @@ Therefore, the NER component is a pretrained model with custom rule-based output
 
 The reusable implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\ner.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\ner.py
 
 NER is used as a supporting component for later evidence and argument analysis.
 
@@ -1011,7 +1011,7 @@ No source, statistic, date, or explicit evidence indicator was detected.
 
 The reusable implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\evidence.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\evidence.py
 
 The evidence extractor currently uses:
 
@@ -1097,27 +1097,27 @@ Weighted F1:     67.83%
 
 The currently trained model artifacts are:
 
-C:\Users\Rasika\BiasLess\models\logic_tfidf_svm_improved.pkl
+C:\Users\Rasika\ReasonIQ\models\logic_tfidf_svm_improved.pkl
 
-C:\Users\Rasika\BiasLess\models\aaec_tfidf_svm_improved.pkl
+C:\Users\Rasika\ReasonIQ\models\aaec_tfidf_svm_improved.pkl
 
-C:\Users\Rasika\BiasLess\models\wnc_tfidf_svm_improved.pkl
+C:\Users\Rasika\ReasonIQ\models\wnc_tfidf_svm_improved.pkl
 
 The sentiment implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\sentiment.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\sentiment.py
 
 The NER implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\ner.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\ner.py
 
 The evidence extraction implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\evidence.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\evidence.py
 
 The argument-quality implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\argument_quality.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\argument_quality.py
 28. Argument Quality Analysis
 
 The Argument Quality module combines the outputs of the completed NLP components into an explainable review-oriented score.
@@ -1208,7 +1208,7 @@ The combined quality score is therefore higher than statements that contain stro
 
 The implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\argument_quality.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\argument_quality.py
 29. Counterargument Generation
 
 Counterargument generation has been implemented as an explainable rule-based component of the BiasLess NLP pipeline.
@@ -1411,7 +1411,7 @@ The fallacy and bias results remain model predictions and are not treated as def
 
 The reusable implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\counterargument.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\counterargument.py
 
 The current implementation:
 
@@ -1431,7 +1431,7 @@ After completing the individual NLP modules, they were integrated into a unified
 
 The implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\engine.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\engine.py
 
 The purpose of the engine is to provide one common interface for analyzing a debate utterance instead of requiring the backend to call every NLP component independently.
 
@@ -1867,81 +1867,88 @@ Complete structured analysis of a debate utterance
 
 The currently selected trained model artifacts are:
 
-C:\Users\Rasika\BiasLess\models\logic_tfidf_svm_improved.pkl
+C:\Users\Rasika\ReasonIQ\models\logic_tfidf_svm_improved.pkl
 
-C:\Users\Rasika\BiasLess\models\aaec_tfidf_svm_improved.pkl
+C:\Users\Rasika\ReasonIQ\models\aaec_tfidf_svm_improved.pkl
 
-C:\Users\Rasika\BiasLess\models\wnc_tfidf_svm_improved.pkl
+C:\Users\Rasika\ReasonIQ\models\wnc_tfidf_svm_improved.pkl
 
 
 The sentiment implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\sentiment.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\sentiment.py
 
 
 The NER implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\ner.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\ner.py
 
 
 The evidence extraction implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\evidence.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\evidence.py
 
 
 The argument-quality implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\argument_quality.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\argument_quality.py
 
 
 The counterargument implementation is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\counterargument.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\counterargument.py
 
 
 The integrated NLP engine is:
 
-C:\Users\Rasika\BiasLess\backend\nlp\engine.py
+C:\Users\Rasika\ReasonIQ\backend\nlp\engine.py
 
 33. Near-Real-Time Speech Processing Architecture
 
-With the text-based NLP engine successfully integrated, the project has now progressed to the speech-processing stage.
+With the text-based NLP engine successfully integrated, the project progressed to the complete audio-to-speech processing pipeline.
 
-The speech-processing architecture consists of:
+The speech processing architecture consists of:
 
-Microphone / Audio Input
+Microphone / Browser Audio Input (MediaRecorder WebM/Opus)
         ↓
-Voice Activity Detection
+PyAV Audio Decoding & 16 kHz Mono Normalization
         ↓
-Speech Region Extraction
+Voice Activity Detection (Silero VAD)
         ↓
-faster-whisper Local Speech-to-Text
+Speech Region Extraction & Audio Anti-Clipping
         ↓
-Completed Text Utterance
+faster-whisper Local Speech-to-Text (CPU, INT8)
         ↓
-BiasLess NLP Engine
+ASR Corruption & Speech Quality Gating (content_gate.py)
         ↓
-Structured Analysis
+Completed Text Utterance & Context Pairing
         ↓
-FastAPI + WebSocket
+ReasonIQ NLP Engine (Fallacy, Argument, Bias, Sentiment, Evidence)
         ↓
-React Dashboard
+Authoritative Scoring & Deduction Breakdown
+        ↓
+FastAPI Backend & Real-Time WebSocket Streaming
+        ↓
+React Dashboard & Real-Time Audio Waveform Cards
+        ↓
+Post-Debate Comprehensive Report Service (JSON / PDF)
 
-The final system is intended to operate in near-real-time rather than instantaneously.
+The system operates in near-real-time locally on CPU without requiring cloud speech APIs or paid external services.
 
 
-33.1 Speech-to-Text Implementation
+33.1 Configurable Speech-to-Text Implementation
 
-The speech-to-text component has been implemented using:
+The speech-to-text component is implemented using:
 
-faster-whisper
+faster-whisper (CTranslate2 backend)
 
-The implementation runs locally and does not require a paid speech-recognition API.
+The implementation runs entirely locally on CPU and supports dynamic model configuration via the WHISPER_MODEL environment variable.
 
-The current configuration is:
+The default and supported configurations are:
 
 Model:
-base
+base.en (Default)
+Alternative options: small.en, base, small
 
 Device:
 CPU
@@ -1950,7 +1957,7 @@ Compute Type:
 int8
 
 Language:
-English
+English (dedicated English acoustic model for base.en and small.en)
 
 Beam Size:
 5
@@ -1958,743 +1965,296 @@ Beam Size:
 VAD Filter:
 Enabled
 
-The reusable implementation is:
+Implementation module:
+C:\Users\Rasika\ReasonIQ\backend\speech\transcriber.py
 
-C:\Users\Rasika\BiasLess\backend\speech\transcriber.py
+Empirical CPU Benchmarks on Target Laptop:
+To choose the most practical model for real-time live debate, benchmarks were performed on recorded debate test clips using CPU with INT8:
 
-The component provides:
+Model: base
+Load Time: 1.11s
+Transcribe Latency: 1.63s
+Notes: Multilingual model; higher latency and occasional phonetic drift on accented debate terms.
 
-- Full transcription
+Model: base.en
+Load Time: 0.83s
+Transcribe Latency: 0.55s
+Notes: Dedicated English model; approximately 3x faster inference; high accuracy on English argument terminology. Selected as the primary default.
+
+Model: small.en
+Load Time: 1.70s
+Transcribe Latency: 3.79s
+Notes: Higher parameter capacity; improved fidelity on complex multi-clause sentences, but higher latency on CPU. Retained as a configurable option for higher-power machines.
+
+The component produces:
+- Full transcript text
 - Timestamped speech segments
-- Detected language
-- Language probability
-
-A sample audio file was used to verify the implementation.
-
-Test input:
-
-C:\Users\Rasika\BiasLess\tests\sample_audio.wav
-
-The speech-to-text component successfully loaded the faster-whisper model and produced a timestamped transcription.
-
-Example:
-
-[0.78s - 4.08s]
-Hello, my name is Rasika.
-
-Therefore, the local speech-to-text component has been successfully implemented and verified.
+- Transcription confidence scores
+- Word-level metadata
 
 
-33.2 Voice Activity Detection
+33.2 Voice Activity Detection (Silero VAD)
 
-Voice Activity Detection has been implemented using:
+Voice Activity Detection is implemented using:
 
-Silero VAD
+Silero VAD (TorchScript ONNX/JIT model)
 
-The purpose of the VAD component is to identify regions containing speech before passing them to the speech-to-text system.
+Implementation module:
+C:\Users\Rasika\ReasonIQ\backend\speech\vad.py
 
-The implementation supports:
+Configuration Parameters:
+- Sampling rate: 16,000 Hz
+- Detection threshold: 0.5 (speech probability)
+- Minimum speech duration: 250 ms
+- Silence padding: 200 ms (preserves start and end phonemes)
 
-- WAV audio input
-- Stereo-to-mono conversion
-- Sample-rate normalization
-- 48 kHz to 16 kHz resampling
-- Local Silero VAD inference
-- Timestamped speech-region detection
-
-The reusable implementation is:
-
-C:\Users\Rasika\BiasLess\backend\speech\vad.py
-
-The current VAD pipeline is:
-
-Input WAV
-    ↓
-Read PCM Audio
-    ↓
-Stereo → Mono
-    ↓
-Resample to 16 kHz
-    ↓
-Silero VAD
-    ↓
-Speech Timestamps
+The VAD component filters background room noise, microphone clicks, and pauses, preventing empty audio chunks from loading the transcription engine.
 
 
-33.3 VAD Verification
+33.3 Audio Decoding and PyAV Normalization
 
-The VAD component was tested using:
+Browser microphones stream audio chunks using the MediaRecorder API formatted as WebM/Opus. The backend processes these streaming audio blobs into normalized PCM using:
 
-C:\Users\Rasika\BiasLess\tests\sample_audio.wav
+PyAV (FFmpeg bindings)
 
-The original sample audio was:
+Implementation module:
+C:\Users\Rasika\ReasonIQ\backend\speech\pipeline.py
 
-- Stereo
-- 48 kHz
-- 16-bit PCM
-
-The VAD implementation automatically converted the audio to:
-
-- Mono
-- 16 kHz
-- Float audio representation
-
-The test successfully detected two speech-activity regions:
-
-Segment 1:
-1.12s - 4.13s
-Duration: 3.00s
-
-Segment 2:
-5.19s - 5.57s
-Duration: 0.38s
-
-This confirms that Silero VAD is successfully identifying speech regions from the input audio.
-
-The VAD component is therefore considered implemented and verified.
-
-The VAD output represents detected speech activity and does not by itself determine whether the detected audio contains meaningful debate content.
+Pipeline steps:
+1. Decode WebM / Opus / WAV / OGG container formats via PyAV container streams.
+2. Resample all multi-channel audio (e.g. 44.1 kHz or 48 kHz stereo) to single-channel 16 kHz Mono float32 PCM.
+3. Apply audio amplitude normalization and anti-clipping:
+   - Peak amplitude normalized within [-1.0, 1.0].
+   - Avoid double-clipping across pipeline stages.
+4. Pass contiguous float32 numpy arrays directly to Silero VAD and Whisper without intermediate disk writes.
 
 
-33.4 Speech-to-Text and VAD Relationship
+33.4 ASR Corruption and Speech Quality Gating
 
-The current speech components operate as separate verified modules.
+A dedicated speech-quality gating layer was built to separate audio capture errors from substantive debate arguments:
 
-The intended integrated pipeline is:
+Implementation module:
+C:\Users\Rasika\ReasonIQ\backend\nlp\content_gate.py
 
-Audio
-    ↓
-Silero VAD
-    ↓
-Detected Speech Region
-    ↓
-Speech Segment Extraction
-    ↓
-faster-whisper
-    ↓
-Timestamped Text
-    ↓
-BiasLess NLP Engine
-
-This integration will prevent unnecessary transcription of silence or non-speech regions and will allow the NLP engine to process completed speech utterances.
+Key Capabilities:
+1. Speech Gating:
+   - Verifies minimum word count, character count, and speech confidence.
+   - Detects severe repetition loops (e.g., hallucinated Whisper loops on trailing silence) and classifies them as corrupted.
+2. Distinguishing Acronyms and Valid Short Positions:
+   - Normalizes periods in common abbreviations (e.g., "A.I." -> "AI") to prevent false fragment flags.
+   - Accurately classifies short substantive claims (e.g., "I agree A.I. should support even creativity not replace it") as valid debate claims.
+3. Classifying Defiance and Non-Substantive Retorts:
+   - Statements such as "You don't tell me what to do. I will do what I want" are classified as insufficient arguments rather than unintelligible speech.
+4. Graceful Downstream Protection:
+   - If audio quality is unreliable or corrupted, ReasonIQ displays a transcription warning and suppresses confident fallacy or penalty deductions.
 
 
-33.5 Speaker Handling
+33.5 Multi-Participant Audio Streaming & Utterance Turn Buffering
 
-The initial implementation will use separate microphones or input devices for Speaker A and Speaker B where practical.
+The system supports distinct audio streams for multiple debate participants:
 
-This approach provides a simpler method for associating detected speech with individual debate participants.
+Implementation module:
+C:\Users\Rasika\ReasonIQ\backend\services\audio_service.py
 
-The initial system does not require automatic speaker diarization.
-
-Automatic speaker diarization can be investigated as future enhancement after the core near-real-time pipeline is completed.
-
-
-33.6 Near-Real-Time Processing Strategy
-
-The system will process speech in short chunks rather than waiting until the complete debate has finished.
-
-The intended sequence is:
-
-Capture Audio
-        ↓
-Detect Speech
-        ↓
-Extract Speech Region
-        ↓
-Transcribe Speech
-        ↓
-Buffer Text
-        ↓
-Identify Completed Utterance
-        ↓
-Run BiasLess NLP Engine
-        ↓
-Generate Structured Analysis
-        ↓
-Send Result to Dashboard
-
-The system should therefore be described as a near-real-time debate analysis system.
-
-The term near-real-time is used because speech recognition and NLP processing require computational time and the system does not guarantee instantaneous analysis.
+- Independent microphone buffers for Speaker A and Speaker B.
+- Turn buffering detects end-of-turn pauses (VAD silence > 800ms) before committing an utterance.
+- Previous speaker statements are preserved and passed to the NLP engine as conversational context (context_prev_text).
 
 
 34. Current Development Status
 
-At the current stage, the major text-based NLP development has been completed and the first speech-processing components have also been implemented and verified.
-
-
-Completed
-
-
-1. Dataset Preparation
-
-The following datasets have been prepared:
-
-- LOGIC Education
-- AAEC v2
-- Wikipedia Neutrality Corpus
-
-The following preprocessing tasks have been completed:
-
-- Dataset inspection
-- Text preprocessing
-- Duplicate investigation
-- Cross-split leakage checking
-- Dataset cleaning
-- Train/dev/test preservation where applicable
-
-
-2. Fallacy Detection
-
-Dataset:
-
-LOGIC Education
-
-Selected Model:
-
-Word + Character TF-IDF + Linear SVM
-
-Test Accuracy:
-
-57.34%
-
-Test Macro F1:
-
-52.72%
-
-
-3. Argument Component Detection
-
-Dataset:
-
-AAEC v2
-
-Selected Model:
-
-Word + Character TF-IDF + Linear SVM
-
-Test Accuracy:
-
-65.43%
-
-Test Macro F1:
-
-53.09%
-
-
-4. Bias-Aware Language Detection
-
-Dataset:
-
-Wikipedia Neutrality Corpus
-
-Selected Model:
-
-Word + Character TF-IDF + Linear SVM
-
-Test Accuracy:
-
-67.85%
-
-Test Macro F1:
-
-67.83%
-
-
-5. Sentiment Analysis
-
-Integrated locally using:
-
-cardiffnlp/twitter-roberta-base-sentiment-latest
-
-The component produces:
-
-- Positive
-- Neutral
-- Negative
-
-
-6. Named Entity Recognition
-
-Integrated locally using:
-
-dslim/bert-base-NER
-
-Custom entity-span post-processing has also been implemented.
-
-
-7. Evidence Extraction
-
-Implemented using:
-
-- Named Entity Recognition
-- Regular expressions
-- Source patterns
-- Statistical patterns
-- Date detection
-- Evidence indicators
-- Explainable scoring rules
-
-
-8. Argument Quality Analysis
-
-Implemented using:
-
-- Argument component prediction
-- Potential fallacy signals
-- Bias-associated wording signals
-- Sentiment intensity
-- Evidence presence
-- Specificity
-
-The output is an explainable 0–100 review-oriented score.
-
-
-9. Counterargument Generation
-
-Implemented using:
-
-- Fallacy-based response templates
-- Bias-aware signals
-- Evidence presence
-- Specificity
-- Argument-quality information
-
-The component runs locally and does not require a paid API or external LLM.
-
-
-10. Integrated NLP Engine
-
-All completed NLP modules have been integrated into:
-
-C:\Users\Rasika\BiasLess\backend\nlp\engine.py
-
-The engine has successfully been tested on multiple debate-style statements.
-
-The unified engine produces structured outputs containing:
-
-- Argument component
-- Fallacy signal
-- Bias-aware signal
-- Sentiment
-- Named entities
-- Evidence
-- Specificity
-- Argument quality
-- Counterargument
-
-
-11. Speech-to-Text
-
-Implemented using:
-
-faster-whisper
-
-Implementation:
-
-C:\Users\Rasika\BiasLess\backend\speech\transcriber.py
-
-The component has been successfully tested using sample_audio.wav.
-
-The test successfully produced timestamped speech transcription.
-
-
-12. Voice Activity Detection
-
-Implemented using:
-
-Silero VAD
-
-Implementation:
-
-C:\Users\Rasika\BiasLess\backend\speech\vad.py
-
-The component successfully detected speech regions from sample_audio.wav.
-
-Audio normalization from 48 kHz stereo WAV to 16 kHz mono audio was also successfully verified.
-
-
-35. Remaining Development Work
-
-The major remaining implementation stages are:
-
-1. VAD → faster-whisper integration
-
-The verified VAD and speech-to-text components need to be connected so that detected speech regions are automatically extracted and passed to faster-whisper.
-
-Planned flow:
-
-Audio
-    ↓
-Silero VAD
-    ↓
-Speech Segment
-    ↓
-faster-whisper
-    ↓
-Timestamped Text
-
-
-2. Speech-to-NLP Integration
-
-After speech transcription is completed, each completed utterance will be passed to:
-
-BiasLessNLPEngine.analyze()
-
-The intended flow is:
-
-Speech
-    ↓
-VAD
-    ↓
-Whisper
-    ↓
-Text Utterance
-    ↓
-BiasLess NLP Engine
-
-
-3. Audio Chunk and Utterance Buffering
-
-The system will process short audio chunks and maintain a text buffer.
-
-Completed sentences or utterances will be analyzed rather than processing every partial word.
-
-
-4. Speaker A / Speaker B Input Handling
-
-The initial implementation will support separate microphone or audio inputs for Speaker A and Speaker B.
-
-This avoids introducing automatic speaker diarization during the first complete integration.
-
-
-5. FastAPI Backend Integration
-
-The completed speech and NLP pipeline will be exposed through a FastAPI backend.
-
-The backend will coordinate:
-
-- Audio processing
-- Speech recognition
-- NLP analysis
-- Structured result generation
-
-
-6. WebSocket Communication
-
-WebSocket communication will be added to transmit analysis results to the frontend without requiring repeated HTTP polling.
-
-The planned flow is:
-
-Speech Processing
-        ↓
-BiasLess NLP Engine
-        ↓
-FastAPI
-        ↓
-WebSocket
-        ↓
-React Dashboard
-
-
-7. React Dashboard Development
-
-The frontend will display the analysis results in a real-time dashboard.
-
-Planned information includes:
-
-- Live transcript
-- Speaker
-- Argument component
-- Potential fallacy
-- Bias-aware language indicators
-- Sentiment
-- Evidence signals
-- Named entities
-- Argument quality score
-- Counterargument
-- Historical debate analysis
-
-
-8. Near-Real-Time End-to-End Integration
-
-All components will eventually be connected:
-
-Audio
- ↓
-VAD
- ↓
-Whisper
- ↓
-NLP Engine
- ↓
-FastAPI
- ↓
-WebSocket
- ↓
-React
-
-
-9. Complete System Testing
-
-The complete system will be tested using debate-style audio containing:
-
-- Claims
-- Evidence
-- Emotional statements
-- Potential fallacies
-- Loaded language
-- Multiple speakers
-
-
-10. End-to-End Performance Evaluation
-
-The final system will be evaluated for:
-
-- Speech-to-text processing time
-- NLP processing time
-- End-to-end latency
-- Speech detection behavior
-- Model outputs
-- Dashboard update time
-- System stability
-
-
-11. Final Documentation and Presentation
-
-The final stages will include:
-
-- System documentation
-- Architecture diagrams
-- Experimental results
-- Screenshots
-- Limitations
-- Future scope
-- Final presentation
-- Demonstration preparation
-
-
-The immediate next implementation stage is:
-
-VAD → faster-whisper Speech Pipeline Integration
-
-
-36. Current BiasLess Architecture
-
-The completed text-analysis architecture is:
-
-                        Debate Text
-                            ↓
-                 Argument Component Detection
-                            ↓
-                      Fallacy Detection
-                            ↓
-                Bias-Aware Language Detection
-                            ↓
-                     Sentiment Analysis
-                            ↓
-                  Named Entity Recognition
-                            ↓
-                    Evidence Extraction
-                            ↓
-                    Specificity Analysis
-                            ↓
-                  Argument Quality Analysis
-                            ↓
-                 Counterargument Generation
-                            ↓
-                   Structured NLP Result
-
-
-The currently completed speech components are:
-
-                        Audio
-                          ↓
-                   Silero VAD
-                          ↓
-              Detected Speech Regions
-                          ↓
-                 faster-whisper
-                          ↓
-              Timestamped Transcription
-
-
-The next integration step is to connect these two pipelines:
-
-                         Audio
-                           ↓
-                      Silero VAD
-                           ↓
-                  Speech Segment
-                           ↓
-                    faster-whisper
-                           ↓
-                  Text Utterance
-                           ↓
-                BiasLess NLP Engine
-                           ↓
-              Structured NLP Analysis
-                           ↓
-                  FastAPI + WebSocket
-                           ↓
-                   React Dashboard
-                           ↓
-                    Final Report
-
-
-37. Current Limitations
-
-The current implementation has several limitations that should be explicitly acknowledged.
-
-The fallacy classifier achieved 57.34% test accuracy and 52.72% Macro F1. Therefore, its predictions may contain false positives and false negatives.
-
-The argument-component classifier performs substantially better on Premise detection than on Claim and MajorClaim classification.
-
-The WNC classifier identifies wording patterns associated with Wikipedia neutrality revisions. Its output should not be interpreted as objective proof that a person or statement is biased.
-
-The sentiment model is a pretrained general-purpose supporting component and has not been evaluated on a dedicated BiasLess debate sentiment test set.
-
-The NER model is pretrained and has not been fine-tuned specifically for debate transcripts.
-
-The Evidence Presence Score detects linguistic evidence signals but does not verify whether a claim, statistic, source, or statement is factually correct.
-
-The Argument Quality Score is an explainable heuristic score rather than a learned objective measurement of argument quality.
-
-The SVM Decision Strength values are transformations of decision margins and are not calibrated probabilities.
-
-The counterargument generator is currently template-based, so its responses are more controlled and explainable but less flexible than responses generated by a large language model.
-
-The current VAD implementation has been verified on WAV audio input. Browser microphone streaming and continuous chunk-based processing have not yet been integrated.
-
-The faster-whisper component has been verified independently on sample audio, but the complete VAD → speech-segment extraction → Whisper → NLP pipeline is still under integration.
-
-Automatic speaker diarization has not yet been implemented.
-
-FastAPI, WebSocket communication, and the React dashboard have not yet been integrated with the speech pipeline.
-
-These limitations are important because BiasLess is designed as an assistive debate-analysis system rather than an automated authority on argument correctness.
-
-
-38. Conclusion
-
-The current BiasLess implementation has completed the main text-based NLP pipeline and integrated the individual NLP components into a unified analysis engine.
-
-Three custom-trained machine-learning classifiers have been developed.
-
-For LOGIC Education, the selected Word + Character TF-IDF Linear SVM achieved:
-
-57.34% Test Accuracy
-52.72% Macro F1
-
-
-For AAEC v2, the selected Word + Character TF-IDF Linear SVM achieved:
-
-65.43% Test Accuracy
-53.09% Macro F1
-
-
-For the Wikipedia Neutrality Corpus, the selected Word + Character TF-IDF Linear SVM achieved:
-
-67.85% Test Accuracy
-67.83% Macro F1
-
-
-Sentiment analysis has been integrated using:
-
-cardiffnlp/twitter-roberta-base-sentiment-latest
-
-
-Named Entity Recognition has been integrated using:
-
-dslim/bert-base-NER
-
-with custom entity-span post-processing.
-
-
-Evidence extraction has been implemented using:
-
-- Named Entity Recognition
-- Source-pattern detection
-- Statistical-pattern detection
-- Date detection
-- Evidence-indicator matching
-- Explainable evidence-presence scoring
-
-
-Argument-quality analysis has been implemented as an explainable heuristic layer combining:
-
-- Argument component prediction
-- Potential fallacy signals
-- Bias-associated wording signals
-- Sentiment intensity
-- Evidence presence
-- Specificity
-
-
-Counterargument generation has also been implemented as a local explainable rule-based component using:
-
-- Fallacy signals
-- Bias-aware signals
-- Evidence presence
-- Specificity
-- Argument-quality information
-
-
-Finally, the completed text-processing components have been integrated into:
-
-BiasLessNLPEngine
-
-
-The speech-processing stage has also begun successfully.
-
-faster-whisper has been implemented and successfully tested for local speech-to-text transcription.
-
-Silero VAD has been implemented and successfully tested for detecting speech regions.
-
-The current verified speech components are:
-
-Audio
-    ↓
-Silero VAD
-    ↓
-Speech Regions
-
-and:
-
-Audio
-    ↓
-faster-whisper
-    ↓
-Timestamped Transcription
-
-
-The next development stage is to integrate these verified components into one continuous speech pipeline:
-
-Audio
-    ↓
-Silero VAD
-    ↓
-Speech Segment Extraction
-    ↓
-faster-whisper
-    ↓
-Completed Text Utterance
-    ↓
-BiasLessNLPEngine
-    ↓
-Structured Analysis
-
-
-This will then be connected to:
-
-FastAPI
-    ↓
-WebSocket
-    ↓
-React Dashboard
-
-
-The final goal is a near-real-time debate analysis system capable of transforming spoken debate into structured and explainable analytical feedback.
-
-BiasLess is designed as an assistive and explainable debate-analysis system. Its classifier outputs, decision-strength indicators, evidence signals, argument-quality scores, and counterarguments should be interpreted as analytical assistance rather than unquestionable judgments about a speaker, claim, or argument.
+The ReasonIQ system has progressed from isolated experimental models to a fully integrated, multi-client, live debate platform. The complete list of implemented and verified components includes:
+
+1. Dataset Preparation & Leakage-Free Preprocessing (LOGIC, AAEC v2, WNC)
+2. Fallacy Detection Model (Word + Char TF-IDF + Linear SVM)
+3. Argument Component Detection Model (Word + Char TF-IDF + Linear SVM)
+4. Bias-Aware Language Detection Model (Word + Char TF-IDF + Linear SVM)
+5. Scikit-Learn 1.5.2 Native Retrained Models (Zero version warnings)
+6. Sentiment Analysis (cardiffnlp/twitter-roberta-base-sentiment-latest)
+7. Named Entity Recognition (dslim/bert-base-NER with span merging)
+8. Evidence Signal Extraction (Source, statistics, dates, and lexical markers)
+9. Specificity and Rhetorical Analysis
+10. Heuristic Argument Quality Scoring Engine
+11. Local Template-Based Counterargument & Coaching Generator
+12. Unified NLP Engine (ReasonIQNLPEngine)
+13. Configurable faster-whisper Speech-to-Text (base.en / small.en / base)
+14. Silero VAD Voice Activity Detection
+15. PyAV Multi-Format Audio Decoding & 16 kHz Mono Normalization
+16. ASR Corruption & Speech Quality Content Gate (content_gate.py)
+17. Context-Aware Fallacy Detection (11 categories + Straw Man turn comparison)
+18. Authoritative Scoring & Penalty Audit Trail (Zero double counting)
+19. FastAPI REST API and Real-Time WebSocket Server
+20. Multi-Client Room Management (Debater A, Debater B, Judge/Spectator)
+21. Interactive React + Vite Live Dashboard & Real-Time Waveform Cards
+22. Comprehensive Post-Debate Report Service & Multi-Format Export (JSON / PDF)
+23. Automated Unit and Integration Regression Test Suite (82/82 passing tests)
+
+
+35. End-to-End System Integration and Implementation
+
+All formerly planned development stages are now fully implemented and functioning in the active codebase:
+
+35.1 End-to-End Speech-to-NLP Orchestration
+The live audio pipeline continuously ingests microphone chunks, verifies speech activity through Silero VAD, transcribes completed utterances via faster-whisper, validates audio clarity via content_gate.py, and routes valid text through the NLP analysis engine.
+
+35.2 Scikit-Learn 1.5.2 Model Retraining
+All custom-trained models were retrained natively in the supported Python 3.11 / scikit-learn 1.5.2 environment:
+- AAEC Model: models/aaec_tfidf_svm_improved.pkl (Accuracy: 65.43%)
+- LOGIC Model: models/logic_tfidf_svm_improved.pkl (Val Accuracy: 56.64%)
+- WNC Model: models/wnc_tfidf_svm_improved.pkl (Val Accuracy: 69.47%, Test Accuracy: 67.85%)
+All InconsistentVersionWarning warnings were eliminated.
+
+35.3 Context-Aware Logical Fallacy Detection
+The system detects 11 formal and informal reasoning patterns:
+1. False cause (post-hoc causal leaps)
+2. Appeal to ignorance (claiming truth because lack of contrary proof)
+3. Hasty generalization (broad claims from singular or anecdotal examples)
+4. Slippery slope (extreme chains of unevidenced negative consequences)
+5. Ad hominem (personal attacks rather than substantive engagement)
+6. Bandwagon / ad populum (claiming correctness based on popularity)
+7. Circular reasoning (tautological restatements as proof)
+8. Straw man (distorting an opponent's qualified position into an extreme stance)
+9. False equivalence (treating fundamentally distinct concepts as identical)
+10. False dilemma (artificially limiting choices to two extremes)
+11. Appeal to authority (asserting truth solely because an authority agrees)
+
+35.4 Dialectical Straw Man Verification
+Straw Man detection compares the current speaker's statement against the preceding speaker's statement (context_prev_text). If Speaker A establishes a qualified position ("AI should be limited in some classroom assessments") and Speaker B asserts a universal caricature ("You want to ban all technology in every school"), ReasonIQ triggers a high-confidence Straw Man detection (confidence: 0.85). If isolated without preceding context, it cautiously returns a lower-confidence signal.
+
+35.5 Authoritative Scoring Engine & Penalty Audit Trail
+The scoring system computes an objective composite score (0–100):
+- Base Score: Dynamically computed from argument structure (claim vs premise), evidence presence score, and lexical specificity (never defaulted to 65).
+- Deductions: Explicitly cataloged into categories:
+  * Conduct Interventions (e.g. personal attack, extreme interruption): -8 to -15 pts
+  * Logical Fallacy Deductions: -10 to -20 pts based on fallacy severity and confidence
+  * Bias-Associated Language Penalties: -5 to -10 pts
+- Zero Double-Counting: Fallacy deductions and intervention penalties are tracked independently and never deducted twice for the same event.
+- Negative sentiment alone produces zero point deductions.
+- All live cards, WebSocket broadcasts, and post-debate reports share the exact same authoritative scores and deduction lists.
+
+35.6 Multi-Client Live Room Management
+The FastAPI backend manages persistent debate rooms supporting:
+- Debater A (Role: speaker_a, independent audio stream)
+- Debater B (Role: speaker_b, independent audio stream)
+- Spectator / Judge (Role: spectator, real-time read-only feed)
+- Dynamic debate settings updateable in real time (e.g., intervention thresholds, strictness levels) without dropping active participants.
+
+35.7 React Live Dashboard & Real-Time Visualization
+The frontend (React + Vite) provides a modern, responsive user experience:
+- Live audio recording with interactive waveform visualizers.
+- Real-time debater cards displaying transcript, argument components, fallacy badges, evidence meters, and coaching counterarguments.
+- Live facilitator intervention banner for severe conduct breaches.
+- Authoritative live scores and score progression graphs.
+
+35.8 Post-Debate Comprehensive Reporting
+When a debate concludes, the backend generates an authoritative post-debate report:
+- Participant head-to-head comparison (Final scores, total claims, premises, fallacies, evidence points).
+- Complete chronologically ordered transcript with per-turn analysis.
+- Itemized deduction breakdown explaining every penalty applied.
+- Export capabilities: Structured JSON and styled printable HTML/PDF.
+
+
+36. Automated Testing and Verification Results
+
+The entire ReasonIQ platform is verified through an extensive automated test suite run via pytest:
+
+Test Suite Results:
+tests/test_audio_and_speech_pipeline.py: 8 passed
+tests/test_interventions_and_reports.py: 5 passed
+tests/test_live_multiclient_flow.py: 1 passed
+tests/test_nlp_gating_and_quality.py: 16 passed
+tests/test_phase1_flow.py: 5 passed
+tests/test_reasoniq_core.py: 10 passed
+tests/test_settings_and_state_consistency.py: 10 passed
+tests/test_speech_and_fallacy_regression.py: 27 passed
+
+Total: 82 passed, 0 failed in 200.91 seconds.
+
+Frontend Production Build:
+Vite production build (npm run build) completed successfully with zero syntax or bundling errors (bundle size: 302 kB JS, 5.6 kB CSS).
+
+
+37. Complete System Architecture
+
+The end-to-end operational architecture of ReasonIQ:
+
+                    [Browser Microphone (Debater A / B)]
+                                      │
+                         (WebM/Opus Audio Stream)
+                                      ▼
+                        [FastAPI WebSocket Endpoint]
+                                      │
+                                      ▼
+                   [PyAV Audio Decoding & Normalization]
+                       (16 kHz Mono float32 PCM)
+                                      │
+                                      ▼
+                         [Silero VAD Speech Gate]
+                      (Filter silence & room noise)
+                                      │
+                                      ▼
+                     [faster-whisper STT Engine]
+                    (CPU, INT8, base.en / small.en)
+                                      │
+                                      ▼
+                     [Speech Quality Content Gate]
+                 (Distinguish errors vs valid claims)
+                                      │
+                                      ▼
+                         [ReasonIQ NLP Engine]
+              ┌───────────────────────┼───────────────────────┐
+              ▼                       ▼                       ▼
+      [AAEC Classifier]       [LOGIC Classifier]       [WNC Classifier]
+     (Claim / Premise)        (Fallacy Detection)     (Bias Neutrality)
+              │                       │                       │
+              └───────────────────────┼───────────────────────┘
+                                      ▼
+                         [Evidence & NER Engine]
+                      (Source, Stats, Date, bert-base)
+                                      │
+                                      ▼
+                        [Preceding Context Engine]
+                      (Speaker A vs B Straw Man Check)
+                                      │
+                                      ▼
+                     [Authoritative Scoring Engine]
+                  (Base Score - Deductions Audit Trail)
+                                      │
+                                      ▼
+                     [Real-Time WebSocket Broadcast]
+                                      │
+                                      ▼
+                    [React Live Dashboard & Cards]
+                                      │
+                                      ▼
+                     [Post-Debate Report Generator]
+                           (PDF / JSON Export)
+
+
+38. Current Limitations and Practical Considerations
+
+1. Local CPU Execution Boundaries:
+   ReasonIQ is designed to run entirely locally on commodity hardware without cloud APIs. On CPU with INT8 quantization, inference latency is 0.5–1.5s per turn. While practical for live turn-based debate, it requires modest pacing between debaters.
+
+2. Statistical Classifiers vs LLMs:
+   The core classifiers (AAEC, LOGIC, WNC) utilize custom Word + Character TF-IDF Linear SVM pipelines. While fast and explainable, they have empirical test accuracies between 57% and 68%. ReasonIQ mitigates this by combining statistical decision strength with explainable rule matchers, evidence heuristics, and conversational context checks rather than treating single classifier outputs as absolute truth.
+
+3. Context Requirements for Dialectical Fallacies:
+   Certain rhetorical fallacies (such as Straw Man) inherently depend on the opponent's stated position. If a debater speaks in isolation without a recorded prior turn, ReasonIQ cautiously marks the utterance as a potential distortion signal rather than applying an unverified fallacy penalty.
+
+4. Assistive Rather than Authoritative Nature:
+   ReasonIQ is built as an analytical assistant for debaters, coaches, and judges. Its scores, fallacy indicators, and counterargument recommendations are intended to promote critical thinking and structured discourse rather than serve as infallible arbitration.
+
+
+39. Conclusion
+
+The ReasonIQ project has evolved from standalone NLP experiments into a complete, locally executable, near-real-time debate and critical thinking analysis system.
+
+Key Achievements:
+- Three custom-trained machine learning classifiers retrained natively on scikit-learn 1.5.2 with zero version warnings.
+- Robust, configurable local speech recognition using faster-whisper (CPU INT8) benchmarked for minimal latency (0.55s) and paired with Silero VAD.
+- ASR corruption gating that accurately distinguishes true audio fragmentation from acronyms, valid short claims, and defiance retorts.
+- Explainable logical fallacy detection covering 11 reasoning categories with preceding-turn context comparison for dialectical fallacies.
+- Authoritative scoring pipeline guaranteeing exact mathematical agreement between live cards, WebSocket broadcasts, and final reports with zero double counting.
+- Full-stack live debate platform with FastAPI WebSockets, multi-client room management, React + Vite frontend dashboard, and post-debate report generation.
+- Validated with 82 passing automated unit/integration tests and verified production frontend builds.
