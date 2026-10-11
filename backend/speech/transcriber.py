@@ -40,7 +40,7 @@ class ReasonIQTranscriber:
         Model size can be configured via argument or WHISPER_MODEL env var (defaults to 'base').
         """
         import os
-        selected_model = model_size or os.getenv("WHISPER_MODEL", "base")
+        selected_model = model_size or os.getenv("WHISPER_MODEL", "base.en")
         self.model_size = selected_model
         self.device = device
         self.compute_type = compute_type

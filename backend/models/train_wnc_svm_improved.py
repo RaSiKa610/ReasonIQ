@@ -12,7 +12,7 @@ from sklearn.metrics import (
 )
 
 
-BASE_DIR = r"C:\Users\Rasika\BiasLess"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 DATA_FILE = os.path.join(
     BASE_DIR,

@@ -155,7 +155,8 @@ class AudioService:
         participant_id: Optional[str] = None,
         speaker_label: Optional[str] = None,
         room_code: Optional[str] = None,
-        mime_type: Optional[str] = None
+        mime_type: Optional[str] = None,
+        context_prev_text: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Processes audio bytes through the speech pipeline with stage-aware isolation:
@@ -221,7 +222,7 @@ class AudioService:
         # STAGE 2: VAD & TRANSCRIPTION
         # -----------------------------------------------------
         try:
-            pipeline_result = self.speech_pipeline.process(temp_wav_path)
+            pipeline_result = self.speech_pipeline.process(temp_wav_path, context_prev_text=context_prev_text)
             full_text = pipeline_result.get("text", "").strip()
             segments = pipeline_result.get("segments", [])
             transcription_warning = pipeline_result.get("transcription_warning")
@@ -265,7 +266,11 @@ class AudioService:
             elif len(segments) == 1 and segments[0].get("nlp_analysis"):
                 nlp_analysis = segments[0]["nlp_analysis"]
             else:
-                nlp_analysis = self.speech_pipeline.nlp_engine.analyze(full_text, transcription_warning=transcription_warning)
+                nlp_analysis = self.speech_pipeline.nlp_engine.analyze(
+                    full_text,
+                    transcription_warning=transcription_warning,
+                    context_prev_text=context_prev_text
+                )
 
             # Attach transcription warning if present
             if transcription_warning and nlp_analysis:

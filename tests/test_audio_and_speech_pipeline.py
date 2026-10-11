@@ -180,7 +180,7 @@ def test_speaker_a_and_speaker_b_independent_state_and_interleaved_turns():
         "utt_b2": "Speaker B conclusion: We must balance automated tools with human mentorship."
     }
 
-    def mock_svc_process(audio_bytes, utterance_id=None, participant_id=None, speaker_label=None, room_code=None):
+    def mock_svc_process(audio_bytes, utterance_id=None, participant_id=None, speaker_label=None, room_code=None, **kwargs):
         txt = transcripts.get(utterance_id, "Generic argument text")
         nlp_res = audio_service.speech_pipeline.nlp_engine.analyze(txt) if audio_service.speech_pipeline else {}
         return {

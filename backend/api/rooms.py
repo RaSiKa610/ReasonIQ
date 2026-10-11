@@ -683,6 +683,18 @@ async def submit_utterance(
             "message": "Audio file was empty or too small."
         }
 
+    # Look up preceding turn text for conversational context (e.g. straw man distortion checks)
+    prev_turn_text = None
+    if room and room.utterances:
+        for prev_u in reversed(room.utterances):
+            if (
+                prev_u.utterance_id != utterance.utterance_id
+                and prev_u.status == "COMPLETED"
+                and prev_u.transcript
+            ):
+                prev_turn_text = prev_u.transcript
+                break
+
     # Process through PyAV adapter and existing Speech+NLP pipeline with full traceability
     proc_result = audio_service.process_audio(
         audio_bytes=audio_bytes,
@@ -690,7 +702,8 @@ async def submit_utterance(
         participant_id=participant_id,
         speaker_label=utterance.speaker_label,
         room_code=code,
-        mime_type=upload_file.content_type
+        mime_type=upload_file.content_type,
+        context_prev_text=prev_turn_text
     )
 
     status = proc_result.get("status")

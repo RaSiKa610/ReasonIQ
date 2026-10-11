@@ -354,31 +354,7 @@ class CounterargumentGenerator:
             }
 
         # -----------------------------------------------------
-        # PRIORITY 2: BIAS
-        # -----------------------------------------------------
-
-        bias_response = self.get_bias_response(
-            bias_analysis
-        )
-
-        if bias_response:
-
-            return {
-                "counterargument":
-                    bias_response["text"],
-
-                "reason":
-                    bias_response["reason"],
-
-                "strategy":
-                    bias_response["strategy"],
-
-                "based_on":
-                    [bias_response["based_on"]]
-            }
-
-        # -----------------------------------------------------
-        # PRIORITY 3: EVIDENCE WEAKNESS
+        # PRIORITY 2: EVIDENCE WEAKNESS
         # -----------------------------------------------------
 
         evidence_response = self.get_evidence_response(
@@ -399,6 +375,30 @@ class CounterargumentGenerator:
 
                 "based_on":
                     [evidence_response["based_on"]]
+            }
+
+        # -----------------------------------------------------
+        # PRIORITY 3: BIAS
+        # -----------------------------------------------------
+
+        bias_response = self.get_bias_response(
+            bias_analysis
+        )
+
+        if bias_response:
+
+            return {
+                "counterargument":
+                    bias_response["text"],
+
+                "reason":
+                    bias_response["reason"],
+
+                "strategy":
+                    bias_response["strategy"],
+
+                "based_on":
+                    [bias_response["based_on"]]
             }
 
         # -----------------------------------------------------

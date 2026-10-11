@@ -149,7 +149,12 @@ class ReasonIQNLPEngine:
     # MAIN ANALYSIS PIPELINE (Gated)
     # =========================================================
 
-    def analyze(self, text: str, transcription_warning: Optional[str] = None) -> Dict[str, Any]:
+    def analyze(
+        self,
+        text: str,
+        transcription_warning: Optional[str] = None,
+        context_prev_text: Optional[str] = None
+    ) -> Dict[str, Any]:
 
         if not text or not text.strip():
 
@@ -333,7 +338,7 @@ class ReasonIQNLPEngine:
         # =====================================================
         # STAGE 2: SUBSTANTIVE ARGUMENTS & PERSONAL ATTACKS
         # =====================================================
-        raw_result = self.argument_quality.analyze(clean_text)
+        raw_result = self.argument_quality.analyze(clean_text, context_prev_text=context_prev_text)
         intervention = self.intervention_detector.detect(clean_text)
 
         # Fallacy normalization (suppresses 'intentional' and unverified fallacies)

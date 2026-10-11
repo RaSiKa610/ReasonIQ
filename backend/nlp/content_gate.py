@@ -113,8 +113,8 @@ class ContentGate:
         # Recognized ASR corruption / Non-word artifacts
         # ----------------------------------------------------
         self.asr_corruption_patterns = [
-            r"\b(ganlones|thingy|somethin|whatchamacallit)\b",
-            r"\b[a-zA-Z]{1,3}\. [a-zA-Z]{1,3}\b",  # Broken single letter periods
+            r"\b(ganlones|whatchamacallit)\b",
+            r"\b[a-zA-Z]\.\s+[a-zA-Z]\.\s+[a-zA-Z]\b",  # Broken isolated single letters e.g. "a. b. c."
         ]
 
     def _is_social_statement(self, text: str, lower_text: str, norm_punct: str) -> bool:
@@ -150,9 +150,11 @@ class ContentGate:
                 return True
 
         # 2. Awkward mid-sentence period fragmentation e.g. "I think. money Needs to happiness."
-        words = text.strip().split()
+        # Normalize acronyms like A.I. so they do not falsely split into fragments
+        text_no_acronyms = re.sub(r'\b([A-Za-z])\.([A-Za-z])\.?', r'\1\2', text)
+        words = text_no_acronyms.strip().split()
         if 3 <= len(words) <= 12:
-            fragments = [f.strip() for f in re.split(r'[.?!]', text) if f.strip()]
+            fragments = [f.strip() for f in re.split(r'[.?!]', text_no_acronyms) if f.strip()]
             if len(fragments) >= 2:
                 # If fragments are very short pieces with internal punctuation breaking clauses
                 short_frags = [f for f in fragments if len(f.split()) <= 2]
@@ -184,6 +186,10 @@ class ContentGate:
             if any(p in lower_text for p in ["many problems with it", "problems with that", "is bad", "is good"]):
                 if not any(conn in lower_text for conn in ["because", "since", "due to", "for example", "as evidenced", "leads to"]):
                     return True
+
+        # Check for personal defiance or non-substantive retorts lacking debate argumentation
+        if re.search(r"\b(you\s+(don't|do\s+not)\s+tell\s+me\s+what\s+to\s+do|i\s+will\s+do\s+what\s+i\s+want|mind\s+your\s+own\s+business|none\s+of\s+your\s+business|don't\s+tell\s+me\s+how\s+to)\b", lower_text):
+            return True
 
         return False
 

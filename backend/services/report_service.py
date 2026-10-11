@@ -177,6 +177,34 @@ class ReportService:
                     "reason": intervention.get("details", intervention.get("warning", "Conduct penalty"))
                 })
 
+            fallacy_pen = float(quality.get("fallacy_penalty", 0.0) or 0.0)
+            if fallacy_pen > 0:
+                deductions.append({
+                    "turn_number": index,
+                    "utterance_id": utt.utterance_id,
+                    "type": "fallacy_penalty",
+                    "category": fallacy.get("prediction", "logical_fallacy"),
+                    "points": int(fallacy_pen),
+                    "text": utt.transcript or "(No transcript)",
+                    "statement": utt.transcript or "(No transcript)",
+                    "warning": fallacy.get("label", "Logical Fallacy Signal"),
+                    "reason": fallacy.get("explanation", f"Point deduction applied for {fallacy.get('label', 'logical fallacy')}.")
+                })
+
+            bias_pen = float(quality.get("bias_penalty", 0.0) or 0.0)
+            if bias_pen > 0:
+                deductions.append({
+                    "turn_number": index,
+                    "utterance_id": utt.utterance_id,
+                    "type": "bias_penalty",
+                    "category": "bias_associated_language",
+                    "points": int(bias_pen),
+                    "text": utt.transcript or "(No transcript)",
+                    "statement": utt.transcript or "(No transcript)",
+                    "warning": "Bias-associated language",
+                    "reason": "Point deduction applied for bias-associated phrasing."
+                })
+
             # Turn history entry
             turn_history.append({
                 "turn_number": index,

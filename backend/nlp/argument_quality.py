@@ -187,7 +187,8 @@ class ArgumentQualityAnalyzer:
 
     def predict_fallacy(
         self,
-        text: str
+        text: str,
+        context_prev_text: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Hybrid fallacy detector covering all 12 key fallacy categories:
@@ -284,7 +285,7 @@ class ArgumentQualityAnalyzer:
 
         # 3. AD HOMINEM (Attack on person's traits/credibility)
         elif not is_legitimate_criticism and not is_bare_insult and (
-            re.search(r"\b(cannot\s+trust\s+(his|her|their|your)\s+opinion\s+.*because\s+(he|she|they|you)\s+(is|are)\s+(just\s+)?(a\s+)?(fool|idiot|stupid|moron|clueless|biased|liar)|your\s+opinion\s+.*doesn't\s+matter\s+because\s+you\s+are|attack\s+on\s+the\s+person)\b", text_lower)
+            re.search(r"\b(cannot\s+trust\s+(his|her|their|your)\s+opinion\s+.*because\s+(he|she|they|you)\s+(is|are)\s+(just\s+)?(a\s+)?(fool|idiot|stupid|moron|clueless|biased|liar)|your\s+opinion\b.*(doesn't|does\s+not)\s+matter|you\s+(don't|do\s+not)\s+understand\b.*so\s+your\s+opinion|attack\s+on\s+the\s+person)\b", text_lower)
             or (svm_pred == "ad hominem" and svm_strength >= 0.65 and "opinion" in text_lower)
         ):
             detected_fallacy = "ad hominem"
@@ -304,7 +305,7 @@ class ArgumentQualityAnalyzer:
 
         # 5. SLIPPERY SLOPE (Checked before hasty generalization for multi-step cascading claims)
         elif not is_legitimate_criticism and re.search(
-            r"\b(if\s+(one|we\s+allow|we\s+let|\w+)\s+.*soon\s+.*(nobody|everyone\s+will|all\s+will)\s+.*and\s+.*(useless|destroyed|collapse|ruined|disappear\s+forever|no\s+future))\b",
+            r"\b(if\s+(one|we\s+allow|we\s+let|\w+)\b.*soon\b.*(all\s+human\s+artists|everyone|every\s+student|nobody|all\s+\w+)\b.*(lose|disappear|useless|ruined|destroyed|stop\s+thinking|no\s+future))\b",
             text_lower
         ):
             detected_fallacy = "slippery slope"
@@ -314,8 +315,13 @@ class ArgumentQualityAnalyzer:
 
         # 6. HASTY GENERALIZATION
         elif not is_legitimate_criticism and (
-            re.search(r"\b((one|a\s+single|a\s+few)\s+\w+\s+.*\bso\s+(all|every|everyone|everybody)\b|in\s+my\s+experience\s+.*(everyone|all)|saw\s+one\s+.*so\s+all)\b", text_lower)
-            or (svm_pred == "faulty generalization" and any(p in text_lower for p in ["one ", "a single ", "in my experience", "all students", "all people"]))
+            re.search(
+                r"\b((one|a\s+single|a\s+few)\s+\w+\s+.*\b(so|therefore)\s+(all|every|everyone|everybody)\b|"
+                r"my\s+(friend|grandfather|father|mother|brother|sister|neighbor|cousin)\s+.*\b(so|therefore)\s+.*(all|better\s+than\s+all|useless|harmful|bad|good)|"
+                r"in\s+my\s+experience\s+.*(everyone|all)|saw\s+one\s+.*so\s+all)\b",
+                text_lower
+            )
+            or (svm_pred == "faulty generalization" and any(p in text_lower for p in ["one ", "a single ", "in my experience", "all students", "all people", "my friend", "my grandfather"]))
         ):
             detected_fallacy = "faulty generalization"
             detected_label = "Hasty generalization"
@@ -324,7 +330,13 @@ class ArgumentQualityAnalyzer:
 
         # 7. FALSE CAUSE
         elif not is_legitimate_criticism and (
-            re.search(r"\b(started\s+.*\band\s+.*(dropped|fell|rose|increased|decreased)\s*,\s*so\s+.*(must\s+have\s+caused|caused|is\s+the\s+reason)|happened\s+.*\bso\s+.*must\s+have\s+caused\b)\b", text_lower)
+            re.search(
+                r"\b((started|introduced)\s+.*\b(dropped|decreased|fell|rose|declined)\s*,\s*(so|therefore)\s+.*(caused|must\s+have\s+caused|is\s+the\s+reason)|"
+                r"(dropped|decreased|fell)\s+after\s+.*(introduced|started|used)\s*,\s*(so|therefore)\s+.*caused|"
+                r"introduced\s+.*,\s*.*(marks|scores|grades|results)\s+(decreased|dropped|fell)\.\s*therefore\b.*caused|"
+                r"happened\s+.*\bso\s+.*must\s+have\s+caused\b|.*\bcaused\s+the\s+(decline|drop|decrease)\b)\b",
+                text_lower
+            )
             or (svm_pred == "false causality" and svm_strength >= 0.55)
         ):
             detected_fallacy = "false causality"
@@ -344,13 +356,22 @@ class ArgumentQualityAnalyzer:
 
         # 9. STRAW MAN
         elif not is_legitimate_criticism and (
-            re.search(r"\b(you\s+(just\s+)?want\s+to\s+(ban\s+all|destroy\s+all|eliminate\s+all|outlaw\s+all|stop\s+all|get\s+rid\s+of\s+all)|they\s+want\s+to\s+(ban\s+all|destroy\s+all)|so\s+you('re|\s+are)\s+saying\s+(we\s+should\s+ban|nobody\s+should|all\s+.*must\s+be\s+banned))\b", text_lower)
+            (context_prev_text and any(q in context_prev_text.lower() for q in ["limited", "some", "regulated", "moderate", "certain"])
+             and any(ext in text_lower for ext in ["ban all", "destroy all", "eliminate all", "every school", "nobody"]))
+            or re.search(r"\b(you\s+(just\s+)?want\s+to\s+(ban\s+all|destroy\s+all|eliminate\s+all|outlaw\s+all|stop\s+all|get\s+rid\s+of\s+all)|they\s+want\s+to\s+(ban\s+all|destroy\s+all)|so\s+you('re|\s+are)\s+saying\s+(we\s+should\s+ban|nobody\s+should|all\s+.*must\s+be\s+banned)|want\s+to\s+ban\s+all\s+technology)\b", text_lower)
             or (svm_pred == "fallacy of extension" and svm_strength >= 0.55)
         ):
             detected_fallacy = "fallacy of extension"
             detected_label = "Straw man"
-            detected_strength = max(0.75, svm_strength)
-            detected_explanation = "Misrepresenting or exaggerating an opposing position to make it easier to attack."
+            if context_prev_text and any(q in context_prev_text.lower() for q in ["limited", "some", "regulated", "moderate", "certain"]):
+                detected_strength = 0.85
+                detected_explanation = f"Distorting the previous speaker's qualified position into an extreme claim ('{text.strip()[:45]}...')."
+            elif context_prev_text:
+                detected_strength = max(0.75, svm_strength)
+                detected_explanation = "Misrepresenting or exaggerating an opposing position to make it easier to attack."
+            else:
+                detected_strength = 0.65
+                detected_explanation = "Attributing an extreme position to the opponent. Note: without access to the opponent's prior statement, distortion cannot be definitively verified."
 
         # 10. FALSE EQUIVALENCE
         elif not is_legitimate_criticism and (
@@ -364,7 +385,11 @@ class ArgumentQualityAnalyzer:
 
         # 11. APPEAL TO AUTHORITY
         elif not is_legitimate_criticism and (
-            re.search(r"\b(experts\s+say\s+.*so\s+it\s+cannot\s+be\s+questioned|celebrity\s+says\s+.*therefore\s+it\s+is\s+fact|authority\s+says\s+so\s+so\s+it\s+must\s+be\s+true)\b", text_lower)
+            re.search(
+                r"\b((an?\s+expert|experts|authority|authorities|scientist|scientists|celebrity)\s+(supports|says|claims|stated|believes)\b.*\b(so\s+it\s+must\s+be\s+true|needs\s+no\s+(other\s+)?evidence|cannot\s+be\s+questioned|proves\s+it|is\s+fact)\b|"
+                r"experts\s+say\s+.*so\s+it\s+cannot\s+be\s+questioned|celebrity\s+says\s+.*therefore\s+it\s+is\s+fact|authority\s+says\s+so\s+so\s+it\s+must\s+be\s+true)\b",
+                text_lower
+            )
             or (svm_pred == "fallacy of credibility" and svm_strength >= 0.65)
         ):
             detected_fallacy = "fallacy of credibility"
@@ -742,7 +767,8 @@ class ArgumentQualityAnalyzer:
 
     def analyze(
         self,
-        text
+        text,
+        context_prev_text: Optional[str] = None
     ):
         if not text or not text.strip():
             return {
@@ -762,7 +788,7 @@ class ArgumentQualityAnalyzer:
             }
 
         argument_component = self.predict_argument_component(text)
-        fallacy = self.predict_fallacy(text)
+        fallacy = self.predict_fallacy(text, context_prev_text=context_prev_text)
         bias = self.predict_bias(text)
         sentiment = self.sentiment_analyzer.analyze(text)
         evidence = self.evidence_analyzer.analyze(text)

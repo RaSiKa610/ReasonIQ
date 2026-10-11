@@ -44,8 +44,9 @@ from nlp.engine import BiasLessNLPEngine, ReasonIQNLPEngine
 
 class ReasonIQSpeechPipeline:
 
-    def __init__(self, whisper_model: str = "base"):
-
+    def __init__(self, whisper_model: str = None):
+        import os
+        selected_model = whisper_model or os.getenv("WHISPER_MODEL", "base.en")
         print("Initializing ReasonIQ Speech Pipeline...")
 
         # ----------------------------------------------------
@@ -63,7 +64,7 @@ class ReasonIQSpeechPipeline:
         print("\nLoading Speech-to-Text...")
 
         self.transcriber = ReasonIQTranscriber(
-            model_size=whisper_model,
+            model_size=selected_model,
             device="cpu",
             compute_type="int8"
         )
@@ -152,7 +153,8 @@ class ReasonIQSpeechPipeline:
 
     def process(
         self,
-        audio_path: str
+        audio_path: str,
+        context_prev_text: str = None
     ) -> Dict:
 
         path = Path(audio_path)
@@ -271,7 +273,11 @@ class ReasonIQSpeechPipeline:
         nlp_result = None
         if full_text:
             print("Running ReasonIQ NLP analysis...")
-            nlp_result = self.nlp_engine.analyze(full_text, transcription_warning=transcription_warning)
+            nlp_result = self.nlp_engine.analyze(
+                full_text,
+                transcription_warning=transcription_warning,
+                context_prev_text=context_prev_text
+            )
             if results:
                 results[0]["nlp_analysis"] = nlp_result
             print("NLP analysis completed.")

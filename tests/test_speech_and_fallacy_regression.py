@@ -321,3 +321,121 @@ def test_social_statement_has_no_artificial_score(nlp):
     assert res["content_type"] == "social_statement"
     assert res["quality"]["score"] is None
     assert res["quality"]["level"] == "Not Applicable"
+
+
+# =========================================================================
+# SECTION 4: LIVE FAILURE CASES (SECTION C & CONVERSATIONAL CONTEXT D)
+# =========================================================================
+
+def test_section_c_understandable_position_with_acronym(nlp):
+    """
+    Case C1: 'I agree A.I. should support even creativity not replace it.'
+    Must NOT be labeled as fragmented or unclear; it is an understandable position.
+    """
+    text = "I agree A.I. should support even creativity not replace it."
+    res = nlp.analyze(text)
+    assert res["success"] is True
+    assert res["content_type"] == "substantive_argument"
+    assert res["quality"]["clarity_status"] in ["Mostly Clear", "Clear & Structured", "Needs Clarification"]
+    assert res["quality"]["clarity_status"] != "Fragmented or Unclear"
+    assert res["quality"]["score"] is not None
+
+
+def test_section_c_personal_defiance_retort(nlp):
+    """
+    Case C2: 'You don't tell me what to do. I will do what I want.'
+    Must NOT be called unintelligible; classified as non-substantive / insufficient argument.
+    """
+    text = "You don't tell me what to do. I will do what I want."
+    res = nlp.analyze(text)
+    assert res["success"] is True
+    assert res["content_type"] == "insufficient_argument"
+    assert res["quality"]["clarity_status"] != "Fragmented or Unclear"
+
+
+def test_section_c_anecdotal_painting_hasty_generalization(nlp):
+    """
+    Case C3: 'My friend used AI to create an amazing painting in seconds. Therefore AI art is better than all traditional art.'
+    Reasoning is understandable; detects hasty generalization / anecdotal generalization.
+    """
+    text = "My friend used AI to create an amazing painting in seconds. Therefore AI art is better than all traditional art."
+    res = nlp.analyze(text)
+    assert res["success"] is True
+    assert res["fallacy"] is not None
+    assert res["fallacy"]["prediction"] == "faulty generalization"
+    assert "Hasty generalization" in res["fallacy"]["label"]
+
+
+def test_section_c_grandfather_hasty_generalization(nlp):
+    """
+    Case C4: 'My grandfather never used computers and was successful, so computers are useless.'
+    Generalization from one single example to an entire category.
+    """
+    text = "My grandfather never used computers and was successful, so computers are useless."
+    res = nlp.analyze(text)
+    assert res["success"] is True
+    assert res["fallacy"] is not None
+    assert res["fallacy"]["prediction"] == "faulty generalization"
+    assert "Hasty generalization" in res["fallacy"]["label"]
+
+
+def test_section_c_false_cause_with_turn_starter(nlp):
+    """
+    Case C5: 'I will. College introduced AI tools, students' marks decreased. Therefore, AI tools caused the decline.'
+    Assesses false-cause fallacy from temporal association.
+    """
+    text = "I will. College introduced AI tools, students' marks decreased. Therefore, AI tools caused the decline."
+    res = nlp.analyze(text)
+    assert res["success"] is True
+    assert res["fallacy"] is not None
+    assert res["fallacy"]["prediction"] == "false causality"
+    assert "False cause" in res["fallacy"]["label"]
+
+
+def test_section_d_slippery_slope_artists_disappear(nlp):
+    """
+    Section D Slippery Slope: 'If we allow AI to create paintings, soon all human artists will lose their jobs and disappear forever.'
+    """
+    text = "If we allow AI to create paintings, soon all human artists will lose their jobs and disappear forever."
+    res = nlp.analyze(text)
+    assert res["success"] is True
+    assert res["fallacy"] is not None
+    assert res["fallacy"]["prediction"] == "slippery slope"
+    assert "Slippery slope" in res["fallacy"]["label"]
+
+
+def test_section_d_appeal_to_authority_expert(nlp):
+    """
+    Section D Appeal to Authority: 'An expert supports this claim, so it must be true and needs no other evidence.'
+    """
+    text = "An expert supports this claim, so it must be true and needs no other evidence."
+    res = nlp.analyze(text)
+    assert res["success"] is True
+    assert res["fallacy"] is not None
+    assert res["fallacy"]["prediction"] == "fallacy of credibility"
+    assert "Appeal to authority" in res["fallacy"]["label"]
+
+
+def test_section_d_strawman_with_and_without_context(nlp):
+    """
+    Section D Straw Man:
+    Speaker A: 'AI should be limited in some classroom assessments.'
+    Speaker B: 'You want to ban all technology in every school.'
+    When preceded by qualified turn, high-confidence Straw Man signal.
+    When isolated, cautious signal.
+    """
+    speaker_a = "AI should be limited in some classroom assessments."
+    speaker_b = "You want to ban all technology in every school."
+
+    # With preceding turn context
+    res_with_ctx = nlp.analyze(speaker_b, context_prev_text=speaker_a)
+    assert res_with_ctx["fallacy"] is not None
+    assert res_with_ctx["fallacy"]["prediction"] == "fallacy of extension"
+    assert res_with_ctx["fallacy"]["decision_strength"] >= 0.75
+
+    # Without context (isolated sentence) -> Cautious result
+    res_isolated = nlp.analyze(speaker_b, context_prev_text=None)
+    assert res_isolated["fallacy"] is not None
+    assert res_isolated["fallacy"]["decision_strength"] <= 0.70
+    assert "Possible" in res_isolated["fallacy"]["label"] or "Straw man" in res_isolated["fallacy"]["label"]
+
