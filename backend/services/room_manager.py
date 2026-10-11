@@ -4,7 +4,7 @@ ReasonIQ - In-Memory Runtime Room Manager
 Manages live debate rooms, participants, dynamic speaker label assignment,
 room state transitions, and utterance history in memory.
 
-Strictly runtime in-memory state for Phase 1.
+Strictly runtime in-memory state.
 """
 
 import time
@@ -43,6 +43,7 @@ class UtteranceState(BaseModel):
     created_at: float = Field(default_factory=time.time)
     duration_seconds: Optional[float] = None
     error_message: Optional[str] = None
+    transcription_warning: Optional[str] = None
 
 
 class RoomState(BaseModel):
@@ -330,7 +331,8 @@ class RoomManager:
         utterance_id: str,
         transcript: str,
         nlp_analysis: Optional[Dict],
-        duration_seconds: Optional[float] = None
+        duration_seconds: Optional[float] = None,
+        transcription_warning: Optional[str] = None
     ) -> Optional[UtteranceState]:
         """
         Update an utterance with its completed transcript and NLP analysis.
@@ -345,6 +347,7 @@ class RoomManager:
                 u.nlp_analysis = nlp_analysis
                 u.status = "COMPLETED"
                 u.duration_seconds = duration_seconds
+                u.transcription_warning = transcription_warning
                 return u
 
         return None

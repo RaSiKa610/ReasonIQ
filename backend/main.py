@@ -2,7 +2,7 @@
 ReasonIQ - Backend Main Entry Point
 
 FastAPI application for the real-time AI-powered debate and argument analysis system.
-Phase 1: In-memory runtime state, PyAV audio adapter, Silero VAD, faster-whisper,
+In-memory runtime state, PyAV audio adapter, Silero VAD, faster-whisper,
 ReasonIQ NLP Engine, and WebSocket broadcasting.
 """
 

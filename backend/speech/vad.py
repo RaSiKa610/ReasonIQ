@@ -134,6 +134,48 @@ class ReasonIQVAD:
 
         return audio, target_rate
 
+    def get_speech_segments(
+        self,
+        wav_tensor: torch.Tensor,
+        sample_rate: int = 16000,
+        threshold: float = 0.35,
+        min_speech_duration_ms: int = 250,
+        min_silence_duration_ms: int = 400,
+        speech_pad_ms: int = 250
+    ) -> List[Dict]:
+        """
+        Extract speech timestamps with conservative thresholds and adequate padding
+        to prevent cutting off beginning consonants or trailing word endings.
+        Merges adjacent speech segments to prevent fragmented transcriptions.
+        """
+        raw_segments = self.get_speech_timestamps(
+            wav_tensor,
+            self.model,
+            sampling_rate=sample_rate,
+            threshold=threshold,
+            min_speech_duration_ms=min_speech_duration_ms,
+            min_silence_duration_ms=min_silence_duration_ms,
+            speech_pad_ms=speech_pad_ms
+        )
+
+        if not raw_segments:
+            return []
+
+        # Merge segments separated by less than 0.5s of silence
+        merged = []
+        for seg in raw_segments:
+            if not merged:
+                merged.append(dict(seg))
+            else:
+                prev = merged[-1]
+                gap_samples = seg["start"] - prev["end"]
+                if gap_samples <= int(0.50 * sample_rate):
+                    prev["end"] = max(prev["end"], seg["end"])
+                else:
+                    merged.append(dict(seg))
+
+        return merged
+
     def detect_speech(
         self,
         audio_path: str
@@ -150,7 +192,6 @@ class ReasonIQVAD:
                 }
             ]
         """
-
         path = Path(audio_path)
 
         if not path.exists():
@@ -163,48 +204,19 @@ class ReasonIQVAD:
                 f"Audio path is not a file: {audio_path}"
             )
 
-        print(
-            f"Analyzing: {path.name}"
-        )
-
-        # --------------------------------------------------
-        # Load and preprocess audio
-        # --------------------------------------------------
-
         wav, sample_rate = self.load_wav(
             str(path)
         )
 
-        # --------------------------------------------------
-        # Silero VAD
-        # --------------------------------------------------
-
-        speech_timestamps = (
-            self.get_speech_timestamps(
-                wav,
-                self.model,
-                sampling_rate=sample_rate
-            )
+        speech_timestamps = self.get_speech_segments(
+            wav,
+            sample_rate=sample_rate
         )
 
-        # --------------------------------------------------
-        # Convert sample positions -> seconds
-        # --------------------------------------------------
-
         results = []
-
         for segment in speech_timestamps:
-
-            start = (
-                segment["start"] /
-                sample_rate
-            )
-
-            end = (
-                segment["end"] /
-                sample_rate
-            )
-
+            start = segment["start"] / sample_rate
+            end = segment["end"] / sample_rate
             duration = end - start
 
             results.append({

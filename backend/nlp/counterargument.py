@@ -61,9 +61,38 @@ class CounterargumentGenerator:
                 "The statement may rely on the authority of a source rather than "
                 "examining the claim itself. Consider evaluating the evidence independently.",
 
-            "fallacy of logic":
-                "The reasoning may contain a logical connection that requires additional support. "
-                "Consider examining each step between the evidence and the conclusion."
+            "appeal to ignorance":
+                "Lack of proof against a claim does not by itself prove that the claim is true. "
+                "Consider examining whether positive, verifiable evidence supports the position.",
+
+            "slippery slope":
+                "The statement predicts an escalating sequence of extreme consequences. "
+                "Consider examining whether each step in the chain is independently supported by evidence.",
+
+            "false equivalence":
+                "The statement equates two distinct concepts or activities. "
+                "Consider whether material differences exist between them that affect the conclusion.",
+
+            "straw man":
+                "The statement may broaden or exaggerate another position. "
+                "Consider addressing the original position directly before evaluating it.",
+
+            "hasty generalization":
+                "The statement extends a conclusion from limited instances to a universal claim. "
+                "Consider examining whether the evidence is broad and representative enough.",
+
+            "false cause":
+                "The statement assumes a cause-and-effect relationship without establishing "
+                "that relationship with evidence. Consider examining evidence that directly supports "
+                "the claimed causal connection.",
+
+            "bandwagon":
+                "Widespread agreement does not by itself establish whether a claim is correct. "
+                "Consider examining the evidence and reasoning behind the position.",
+
+            "appeal to authority":
+                "The statement may rely on the authority of a source rather than "
+                "examining the claim itself. Consider evaluating the evidence independently."
         }
 
         self.bias_template = (

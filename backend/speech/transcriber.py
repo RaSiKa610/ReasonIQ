@@ -31,49 +31,27 @@ class ReasonIQTranscriber:
 
     def __init__(
         self,
-        model_size: str = "base",
+        model_size: Optional[str] = None,
         device: str = "cpu",
         compute_type: str = "int8"
     ):
         """
         Initialize the Whisper model.
-
-        Parameters
-        ----------
-        model_size:
-            Whisper model size.
-
-            Available examples:
-            - tiny
-            - base
-            - small
-            - medium
-            - large-v3
-
-        device:
-            "cpu" or "cuda"
-
-        compute_type:
-            CPU:
-                "int8"
-                "float32"
-
-            CUDA:
-                "float16"
-                "int8_float16"
+        Model size can be configured via argument or WHISPER_MODEL env var (defaults to 'base').
         """
-
-        self.model_size = model_size
+        import os
+        selected_model = model_size or os.getenv("WHISPER_MODEL", "base")
+        self.model_size = selected_model
         self.device = device
         self.compute_type = compute_type
 
         print("Loading faster-whisper model...")
-        print(f"Model: {model_size}")
+        print(f"Model: {selected_model}")
         print(f"Device: {device}")
         print(f"Compute type: {compute_type}")
 
         self.model = WhisperModel(
-            model_size,
+            selected_model,
             device=device,
             compute_type=compute_type
         )
@@ -83,36 +61,14 @@ class ReasonIQTranscriber:
     def transcribe_file(
         self,
         audio_path: str,
-        language: Optional[str] = "en"
+        language: Optional[str] = "en",
+        initial_prompt: Optional[str] = "A formal debate speech discussing artificial intelligence, ethics, technology, education, culture, logic, and philosophy.",
+        vad_filter: bool = False
     ) -> Dict:
         """
-        Transcribe an audio file.
-
-        Parameters
-        ----------
-        audio_path:
-            Path to the audio file.
-
-        language:
-            Language code.
-            Example:
-                "en" for English
-                "hi" for Hindi
-
-            If None, Whisper automatically detects the language.
-
-        Returns
-        -------
-        Dictionary containing:
-
-        {
-            "text": "...",
-            "language": "en",
-            "language_probability": 0.99,
-            "segments": [...]
-        }
+        Transcribe an audio file using faster-whisper with debate context prior,
+        hallucination suppression, and transcription quality assessment.
         """
-
         path = Path(audio_path)
 
         if not path.exists():
@@ -131,29 +87,61 @@ class ReasonIQTranscriber:
             str(path),
             language=language,
             beam_size=5,
-            vad_filter=True
+            vad_filter=vad_filter,
+            initial_prompt=initial_prompt,
+            condition_on_previous_text=False,
+            no_speech_threshold=0.6,
+            compression_ratio_threshold=2.4
         )
 
         segment_results = []
         complete_text = []
+        avg_logprob_sum = 0.0
+        seg_count = 0
+
+        # Known Whisper hallucination phrases on trailing noise or chopped speech
+        phantom_patterns = [
+            r"\bwas done that she was\b",
+            r"\bthank you for watching\b",
+            r"\bsubtitles by\b",
+            r"\bbye[- ]bye\.?\b",
+            r"\bstint!\b"
+        ]
+
+        import re
 
         for segment in segments:
-
             text = segment.text.strip()
+            if not text:
+                continue
+
+            # Strip obvious trailing hallucinations
+            for phantom in phantom_patterns:
+                text = re.sub(phantom, "", text, flags=re.IGNORECASE).strip()
 
             if not text:
                 continue
 
+            avg_logprob = getattr(segment, "avg_logprob", 0.0)
+            avg_logprob_sum += avg_logprob
+            seg_count += 1
+
             segment_data = {
                 "start": round(float(segment.start), 2),
                 "end": round(float(segment.end), 2),
-                "text": text
+                "text": text,
+                "avg_logprob": round(float(avg_logprob), 3) if avg_logprob else 0.0
             }
 
             segment_results.append(segment_data)
             complete_text.append(text)
 
         final_text = " ".join(complete_text).strip()
+        mean_logprob = (avg_logprob_sum / seg_count) if seg_count > 0 else 0.0
+
+        transcription_warning = None
+        if seg_count > 0 and mean_logprob < -1.1:
+            transcription_warning = "Audio quality or pronunciation was unclear; transcription may be approximate."
 
         return {
             "text": final_text,
@@ -162,7 +150,9 @@ class ReasonIQTranscriber:
                 float(info.language_probability),
                 4
             ),
-            "segments": segment_results
+            "segments": segment_results,
+            "mean_logprob": round(mean_logprob, 3),
+            "transcription_warning": transcription_warning
         }
 
     def transcribe(

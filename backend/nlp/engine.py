@@ -119,7 +119,7 @@ class ReasonIQNLPEngine:
         if not raw_fallacy or not isinstance(raw_fallacy, dict):
             return None
 
-        prediction = raw_fallacy.get("prediction") or raw_fallacy.get("label")
+        prediction = raw_fallacy.get("prediction")
         if not prediction:
             return None
 
@@ -134,19 +134,22 @@ class ReasonIQNLPEngine:
             return None
 
         strength = self.to_float(raw_fallacy.get("decision_strength"), 0.0)
+        display_label = raw_fallacy.get("label") or pred_str.capitalize()
+        explanation = raw_fallacy.get("explanation", "")
 
         return {
             "prediction": pred_str,
-            "label": pred_str,
+            "label": display_label,
             "decision_strength": strength,
-            "reliable": True
+            "reliable": True,
+            "explanation": explanation
         }
 
     # =========================================================
     # MAIN ANALYSIS PIPELINE (Gated)
     # =========================================================
 
-    def analyze(self, text: str) -> Dict[str, Any]:
+    def analyze(self, text: str, transcription_warning: Optional[str] = None) -> Dict[str, Any]:
 
         if not text or not text.strip():
 
@@ -161,7 +164,7 @@ class ReasonIQNLPEngine:
         # =====================================================
         # STAGE 1: SPEECH / CONTENT QUALITY GATE
         # =====================================================
-        gate_res = self.gate.classify(clean_text)
+        gate_res = self.gate.classify(clean_text, transcription_warning=transcription_warning)
         content_type = gate_res.get("content_type", "substantive_argument")
 
         # -----------------------------------------------------
@@ -336,7 +339,10 @@ class ReasonIQNLPEngine:
         # Fallacy normalization (suppresses 'intentional' and unverified fallacies)
         fallacy = self.normalize_fallacy(raw_result.get("fallacy", {}), clean_text)
 
-        # If personal attack or ad hominem attack on person is present:
+        # Gate fallacy if audio transcription is warned/unreliable or utterance is personal attack
+        if transcription_warning:
+            fallacy = None
+
         if content_type == "personal_attack":
             # If text has ad hominem structure, retain ad hominem; otherwise fallacy is None
             if fallacy and fallacy.get("prediction") != "ad hominem":
@@ -348,11 +354,13 @@ class ReasonIQNLPEngine:
         argument_component = raw_result.get("argument_component", {})
 
         # Calculate final quality score
-        base_score = raw_result.get("argument_quality_score", 50.0)
-        penalty = intervention.get("penalty", 0) if intervention.get("triggered") else 0
-        final_score = max(0.0, min(100.0, float(base_score) - float(penalty)))
+        base_score = raw_result.get("base_quality_score", 50.0)
+        penalty = float(intervention.get("penalty", 0)) if intervention.get("triggered") else 0.0
+        fallacy_pen = float(raw_result.get("fallacy_penalty", 0.0))
+        bias_pen = float(raw_result.get("bias_penalty", 0.0))
+        final_score = max(0.0, min(100.0, float(base_score) - penalty - fallacy_pen - bias_pen))
 
-        if final_score >= 70.0:
+        if final_score >= 75.0:
             level = "Strong"
         elif final_score >= 50.0:
             level = "Moderate"
@@ -362,13 +370,15 @@ class ReasonIQNLPEngine:
         quality_explanations = list(raw_result.get("explanation", []))
         if penalty > 0:
             quality_explanations.append(
-                f"Intervention penalty applied: -{penalty} points ({intervention.get('warning')})"
+                f"Intervention penalty applied: -{int(penalty)} points ({intervention.get('warning')})"
             )
 
         quality = {
             "score": self.to_float(final_score, 50.0),
             "base_score": self.to_float(base_score, 50.0),
             "intervention_penalty": self.to_float(penalty, 0.0),
+            "fallacy_penalty": self.to_float(fallacy_pen, 0.0),
+            "bias_penalty": self.to_float(bias_pen, 0.0),
             "level": level,
             "specificity_score": raw_result.get("specificity_score", 0.0),
             "clarity_status": gate_res.get("clarity_status", "Clear & Structured"),

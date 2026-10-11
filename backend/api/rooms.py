@@ -689,7 +689,8 @@ async def submit_utterance(
         utterance_id=utterance.utterance_id,
         participant_id=participant_id,
         speaker_label=utterance.speaker_label,
-        room_code=code
+        room_code=code,
+        mime_type=upload_file.content_type
     )
 
     status = proc_result.get("status")
@@ -805,12 +806,14 @@ async def submit_utterance(
         # COMPLETED
         transcript = proc_result["transcript"]
         nlp_analysis = proc_result["nlp_analysis"]
+        transcription_warning = proc_result.get("transcription_warning")
 
         updated_utterance = room_manager.complete_utterance(
             room_code=code,
             utterance_id=utterance.utterance_id,
             transcript=transcript,
-            nlp_analysis=nlp_analysis
+            nlp_analysis=nlp_analysis,
+            transcription_warning=transcription_warning
         )
 
         # ----------------------------------------------------
@@ -828,6 +831,7 @@ async def submit_utterance(
             "speaker_label": utterance.speaker_label,
             "speaker_name": utterance.speaker_name,
             "transcript": transcript,
+            "transcription_warning": transcription_warning,
             "nlp_analysis": public_nlp,
             "status": "COMPLETED",
             "created_at": updated_utterance.created_at if updated_utterance else None
@@ -840,6 +844,7 @@ async def submit_utterance(
             "speaker_label": utterance.speaker_label,
             "speaker_name": utterance.speaker_name,
             "transcript": transcript,
+            "transcription_warning": transcription_warning,
             "nlp_analysis": nlp_analysis,
             "status": "COMPLETED",
             "created_at": updated_utterance.created_at if updated_utterance else None

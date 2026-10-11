@@ -77,6 +77,8 @@ class ContentGate:
             r"\b(you\s+know\s+nothing)\b",
             r"\b(you\s+are\s+worthless)\b",
             # Attacking speaker's credibility / right to speak
+            r"\b(cannot\s+trust|can't\s+trust|don't\s+trust)\s+(his|her|their|your)\s+opinion\b",
+            r"\b(he|she|they|you)\s+is\s+(just\s+)?(a\s+)?(fool|idiot|stupid|moron|clueless|liar)\b",
             r"\b(you\s+(don't|do\s+not)\s+understand\s+[^.]*so\s+your\s+opinion\s+[^.]*doesn't\s+matter)\b",
             r"\byour\s+opinion\s+(against\s+[^.]*\s+)?(doesn't|does\s+not)\s+matter\b",
             r"\byou\s+have\s+no\s+(right|clue|credibility|idea)\s+to\s+speak\b",
@@ -185,7 +187,7 @@ class ContentGate:
 
         return False
 
-    def classify(self, text: str) -> Dict[str, Any]:
+    def classify(self, text: str, transcription_warning: Optional[str] = None) -> Dict[str, Any]:
         """
         Classifies an input transcript into content category and determines
         routing rules for subsequent NLP stages.
@@ -267,7 +269,7 @@ class ContentGate:
                 "content_type": "unclear_fragment",
                 "is_substantive": False,
                 "reason": "Statement is unclear, fragmented, or contains ASR artifacts.",
-                "clarity_status": "Unclear / Fragmented",
+                "clarity_status": "Fragmented or Unclear",
                 "clarity_score": 45.0,
                 "allow_fallacy": False,
                 "allow_evidence": False,
@@ -296,16 +298,24 @@ class ContentGate:
         # ----------------------------------------------------
         # 6. Substantive Argument (Default for structured debate content)
         # ----------------------------------------------------
-        # Determine clarity of substantive argument
         words = clean_text.split()
         has_reasoning = any(conn in lower_text for conn in ["because", "since", "due to", "therefore", "so", "by providing", "for example", "which means", "as a result", "leads to", "helping"])
-        
-        if len(words) >= 8 or has_reasoning:
+
+        if clean_text.endswith("...") or clean_text.endswith("…") or (len(words) <= 4 and not has_reasoning):
+            clarity_status = "Needs Clarification"
+            clarity_score = 60.0
+        elif transcription_warning:
+            clarity_status = "Needs Clarification"
+            clarity_score = 55.0
+        elif len(words) >= 7 and has_reasoning:
             clarity_status = "Clear & Structured"
             clarity_score = 90.0
-        else:
+        elif len(words) >= 5:
             clarity_status = "Mostly Clear"
             clarity_score = 80.0
+        else:
+            clarity_status = "Needs Clarification"
+            clarity_score = 65.0
 
         return {
             "content_type": "substantive_argument",

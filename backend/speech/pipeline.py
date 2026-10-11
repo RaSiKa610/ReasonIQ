@@ -182,200 +182,109 @@ class ReasonIQSpeechPipeline:
             )
         )
 
-        # Detect speech
-        speech_segments = (
-            self.vad.get_speech_timestamps(
-                audio,
-                self.vad.model,
-                sampling_rate=sample_rate
-            )
+        # Detect speech with conservative threshold and adequate padding
+        speech_segments = self.vad.get_speech_segments(
+            audio,
+            sample_rate=sample_rate,
+            threshold=0.35,
+            min_speech_duration_ms=250,
+            min_silence_duration_ms=400,
+            speech_pad_ms=250
         )
 
+        total_audio_duration = len(audio) / sample_rate
         print(
-            f"Detected "
-            f"{len(speech_segments)} "
-            f"possible speech segment(s)."
+            f"Detected {len(speech_segments)} speech segment(s) "
+            f"(Total audio: {total_audio_duration:.2f}s)"
+        )
+
+        if not speech_segments:
+            print("No speech detected by VAD.")
+            return {
+                "audio": str(path),
+                "language": "en",
+                "segments": [],
+                "text": "",
+                "transcription_warning": None,
+                "speech_duration": 0.0,
+                "total_duration": total_audio_duration
+            }
+
+        # Calculate bounded speech region covering all speech with padding
+        first_start_sample = max(0, speech_segments[0]["start"] - int(0.20 * sample_rate))
+        last_end_sample = min(len(audio), speech_segments[-1]["end"] + int(0.20 * sample_rate))
+        start_sec = first_start_sample / sample_rate
+        end_sec = last_end_sample / sample_rate
+        speech_duration = end_sec - start_sec
+
+        temp_path = self.save_segment(
+            audio,
+            start_sec,
+            end_sec,
+            sample_rate
         )
 
         results = []
+        full_text = ""
+        transcription_warning = None
 
-        # ====================================================
-        # PROCESS EACH VAD SEGMENT
-        # ====================================================
-
-        for index, segment in enumerate(
-            speech_segments,
-            start=1
-        ):
-
-            start = (
-                segment["start"]
-                / sample_rate
+        try:
+            print(f"Transcribing cohesive speech region ({start_sec:.2f}s - {end_sec:.2f}s)...")
+            transcription = self.transcriber.transcribe_file(
+                temp_path,
+                language="en",
+                initial_prompt="A formal debate speech discussing artificial intelligence, ethics, technology, education, culture, logic, and philosophy.",
+                vad_filter=False
             )
 
-            end = (
-                segment["end"]
-                / sample_rate
-            )
+            full_text = transcription.get("text", "").strip()
+            transcription_warning = transcription.get("transcription_warning")
+            whisper_segments = transcription.get("segments", [])
 
-            duration = end - start
-
-            print("\n" + "-" * 60)
-
-            print(
-                f"Segment {index}: "
-                f"{start:.2f}s - "
-                f"{end:.2f}s "
-                f"({duration:.2f}s)"
-            )
-
-            # ------------------------------------------------
-            # Ignore extremely short segments
-            # ------------------------------------------------
-
-            if duration < 0.30:
-
-                print(
-                    "Skipped: segment too short."
-                )
-
-                continue
-
-            # ------------------------------------------------
-            # STEP 2 - EXTRACT SPEECH AUDIO
-            # ------------------------------------------------
-
-            print(
-                "Extracting speech segment..."
-            )
-
-            temp_path = self.save_segment(
-                audio,
-                start,
-                end,
-                sample_rate
-            )
-
-            try:
-
-                # ============================================
-                # STEP 3 - SPEECH TO TEXT
-                # ============================================
-
-                print(
-                    "Running Whisper..."
-                )
-
-                transcription = (
-                    self.transcriber
-                    .transcribe_file(
-                        temp_path,
-                        language="en"
-                    )
-                )
-
-                text = (
-                    transcription["text"]
-                    .strip()
-                )
-
-                # ------------------------------------------------
-                # Keep only segments containing recognizable text
-                # ------------------------------------------------
-
-                if not text:
-
-                    print(
-                        "No recognizable speech. "
-                        "Segment discarded."
-                    )
-
-                    continue
-
-                print(
-                    f"Transcription: {text}"
-                )
-
-                # ============================================
-                # STEP 4 - NLP ANALYSIS
-                # ============================================
-
-                print(
-                    "Running ReasonIQ NLP analysis..."
-                )
-
-                nlp_result = (
-                    self.nlp_engine.analyze(
-                        text
-                    )
-                )
-
-                print(
-                    "NLP analysis completed."
-                )
-
-                # ============================================
-                # STORE COMPLETE RESULT
-                # ============================================
-
+            if whisper_segments:
+                for w_seg in whisper_segments:
+                    results.append({
+                        "start": round(start_sec + w_seg["start"], 2),
+                        "end": round(start_sec + w_seg["end"], 2),
+                        "duration": round(w_seg["end"] - w_seg["start"], 2),
+                        "text": w_seg["text"]
+                    })
+            elif full_text:
                 results.append({
-
-                    "start": round(
-                        start,
-                        2
-                    ),
-
-                    "end": round(
-                        end,
-                        2
-                    ),
-
-                    "duration": round(
-                        duration,
-                        2
-                    ),
-
-                    "text": text,
-
-                    "nlp_analysis": nlp_result
+                    "start": round(start_sec, 2),
+                    "end": round(end_sec, 2),
+                    "duration": round(speech_duration, 2),
+                    "text": full_text
                 })
 
-            finally:
+            print(f"Final Recognized Transcription: '{full_text}'")
 
-                # ------------------------------------------------
-                # Delete temporary WAV
-                # ------------------------------------------------
-
-                temp_file = Path(
-                    temp_path
-                )
-
-                if temp_file.exists():
-
+        finally:
+            temp_file = Path(temp_path)
+            if temp_file.exists():
+                try:
                     temp_file.unlink()
+                except Exception:
+                    pass
 
-        # ====================================================
-        # COMBINE RECOGNIZED SPEECH
-        # ====================================================
-
-        full_text = " ".join(
-            segment["text"]
-            for segment in results
-        )
-
-        # ====================================================
-        # FINAL RESULT
-        # ====================================================
+        # If speech was recognized, run NLP analysis
+        nlp_result = None
+        if full_text:
+            print("Running ReasonIQ NLP analysis...")
+            nlp_result = self.nlp_engine.analyze(full_text, transcription_warning=transcription_warning)
+            if results:
+                results[0]["nlp_analysis"] = nlp_result
+            print("NLP analysis completed.")
 
         return {
-
             "audio": str(path),
-
             "language": "en",
-
             "segments": results,
-
-            "text": full_text
+            "text": full_text,
+            "transcription_warning": transcription_warning,
+            "speech_duration": round(speech_duration, 2),
+            "total_duration": round(total_audio_duration, 2),
+            "nlp_analysis": nlp_result
         }
 
 

@@ -92,11 +92,21 @@ class AudioService:
         # If PyAV extracted frames successfully:
         if pcm_frames:
             try:
+                raw_bytes = b"".join(pcm_frames)
+                # Check amplitude and apply safe gain normalization if speech is quiet
+                if len(raw_bytes) >= 2:
+                    audio_arr = np.frombuffer(raw_bytes, dtype=np.int16)
+                    peak = int(np.max(np.abs(audio_arr)))
+                    if 150 < peak < 10000:
+                        scale = min(3.5, 18000.0 / max(1, peak))
+                        audio_arr = np.clip(audio_arr * scale, -32767, 32767).astype(np.int16)
+                        raw_bytes = audio_arr.tobytes()
+
                 with wave.open(temp_wav_path, "wb") as wav_file:
                     wav_file.setnchannels(1)
                     wav_file.setsampwidth(2)  # 16-bit = 2 bytes
                     wav_file.setframerate(target_sample_rate)
-                    wav_file.writeframes(b"".join(pcm_frames))
+                    wav_file.writeframes(raw_bytes)
                 return temp_wav_path
             except Exception as write_err:
                 print(f"[AudioService] Error writing decoded WAV: {write_err}")
@@ -113,23 +123,26 @@ class AudioService:
                     framerate = raw_wav.getframerate()
                     raw_frames = raw_wav.readframes(raw_wav.getnframes())
 
-                    # If already 16kHz mono 16-bit
-                    if n_channels == 1 and sampwidth == 2 and framerate == target_sample_rate:
-                        with open(temp_wav_path, "wb") as f:
-                            f.write(audio_bytes)
-                        return temp_wav_path
-                    else:
-                        # Normalize via wave + numpy
-                        audio_data = np.frombuffer(raw_frames, dtype=np.int16)
-                        if n_channels == 2:
-                            audio_data = audio_data.reshape(-1, 2).mean(axis=1).astype(np.int16)
-                        
-                        with wave.open(temp_wav_path, "wb") as out_wav:
-                            out_wav.setnchannels(1)
-                            out_wav.setsampwidth(2)
-                            out_wav.setframerate(target_sample_rate)
-                            out_wav.writeframes(audio_data.tobytes())
-                        return temp_wav_path
+                    audio_data = np.frombuffer(raw_frames, dtype=np.int16)
+                    if n_channels == 2:
+                        audio_data = audio_data.reshape(-1, 2).mean(axis=1).astype(np.int16)
+
+                    # Resample if not 16kHz
+                    if framerate != target_sample_rate and len(audio_data) > 0:
+                        from scipy.signal import resample_poly
+                        audio_data = resample_poly(audio_data, target_sample_rate, framerate).astype(np.int16)
+
+                    peak = int(np.max(np.abs(audio_data))) if len(audio_data) > 0 else 0
+                    if 150 < peak < 10000:
+                        scale = min(3.5, 18000.0 / max(1, peak))
+                        audio_data = np.clip(audio_data * scale, -32767, 32767).astype(np.int16)
+
+                    with wave.open(temp_wav_path, "wb") as out_wav:
+                        out_wav.setnchannels(1)
+                        out_wav.setsampwidth(2)
+                        out_wav.setframerate(target_sample_rate)
+                        out_wav.writeframes(audio_data.tobytes())
+                    return temp_wav_path
         except Exception as wav_fallback_err:
             print(f"[AudioService] WAV fallback error: {wav_fallback_err}")
 
@@ -141,7 +154,8 @@ class AudioService:
         utterance_id: Optional[str] = None,
         participant_id: Optional[str] = None,
         speaker_label: Optional[str] = None,
-        room_code: Optional[str] = None
+        room_code: Optional[str] = None,
+        mime_type: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Processes audio bytes through the speech pipeline with stage-aware isolation:
@@ -150,13 +164,15 @@ class AudioService:
         3. faster-whisper -> transcription
         4. ReasonIQ NLP Engine -> analytical breakdown
         """
+        import time
+        t_start = time.time()
         uid = utterance_id or str(uuid.uuid4())
-        print(f"\n[AUDIO_START] room={room_code} participant={participant_id} speaker={speaker_label} utterance={uid} size={len(audio_bytes)} bytes")
+        audio_size = len(audio_bytes) if audio_bytes else 0
 
         if not self.speech_pipeline:
             try:
-                print("[AUDIO_SERVICE] Lazy-initializing ReasonIQSpeechPipeline...")
-                self.speech_pipeline = ReasonIQSpeechPipeline(whisper_model="base")
+                print("[AUDIO_SERVICE] Initializing ReasonIQSpeechPipeline...")
+                self.speech_pipeline = ReasonIQSpeechPipeline()
             except Exception as init_err:
                 return {
                     "status": "AUDIO_ERROR",
@@ -169,7 +185,7 @@ class AudioService:
                 }
 
         if not audio_bytes or len(audio_bytes) == 0:
-            print(f"[AUDIO_START] utterance={uid} status=no_speech (empty audio payload)")
+            print(f"[DIAGNOSTICS] room={room_code} utterance={uid} speaker={speaker_label} mime={mime_type} size={audio_size} error=NO_SPEECH_EMPTY")
             return {
                 "status": "NO_SPEECH",
                 "stage": "vad",
@@ -188,10 +204,8 @@ class AudioService:
         # -----------------------------------------------------
         try:
             temp_wav_path = self.convert_to_wav(audio_bytes, utterance_id=uid)
-            print(f"[AUDIO_CONVERSION] status=success output={temp_wav_path}")
         except Exception as conv_err:
-            print(f"[AUDIO_CONVERSION] status=failure error={conv_err}")
-            traceback.print_exc()
+            print(f"[DIAGNOSTICS] room={room_code} utterance={uid} speaker={speaker_label} mime={mime_type} size={audio_size} error=AUDIO_CONVERSION_ERROR: {conv_err}")
             return {
                 "status": "AUDIO_ERROR",
                 "stage": "audio_conversion",
@@ -210,11 +224,13 @@ class AudioService:
             pipeline_result = self.speech_pipeline.process(temp_wav_path)
             full_text = pipeline_result.get("text", "").strip()
             segments = pipeline_result.get("segments", [])
-
-            print(f"[VAD_WHISPER] segments={len(segments)} text_length={len(full_text)}")
+            transcription_warning = pipeline_result.get("transcription_warning")
+            speech_dur = pipeline_result.get("speech_duration", 0.0)
+            total_dur = pipeline_result.get("total_duration", 0.0)
+            model_name = getattr(self.speech_pipeline.transcriber, "model_size", "base")
 
             if not full_text or len(segments) == 0:
-                print(f"[VAD] status=no_speech utterance={uid}")
+                print(f"[DIAGNOSTICS] room={room_code} utterance={uid} speaker={speaker_label} mime={mime_type} size={audio_size} audio_duration={total_dur}s speech_duration=0s error=NO_SPEECH_DETECTED")
                 return {
                     "status": "NO_SPEECH",
                     "stage": "vad",
@@ -227,8 +243,7 @@ class AudioService:
                 }
 
         except Exception as speech_err:
-            print(f"[WHISPER] status=failure error={speech_err}")
-            traceback.print_exc()
+            print(f"[DIAGNOSTICS] room={room_code} utterance={uid} speaker={speaker_label} mime={mime_type} size={audio_size} error=TRANSCRIPTION_ERROR: {speech_err}")
             return {
                 "status": "TRANSCRIPTION_ERROR",
                 "stage": "transcription",
@@ -245,17 +260,30 @@ class AudioService:
         # -----------------------------------------------------
         nlp_analysis = None
         try:
-            if len(segments) == 1 and segments[0].get("nlp_analysis"):
+            if pipeline_result.get("nlp_analysis"):
+                nlp_analysis = pipeline_result["nlp_analysis"]
+            elif len(segments) == 1 and segments[0].get("nlp_analysis"):
                 nlp_analysis = segments[0]["nlp_analysis"]
             else:
-                nlp_analysis = self.speech_pipeline.nlp_engine.analyze(full_text)
+                nlp_analysis = self.speech_pipeline.nlp_engine.analyze(full_text, transcription_warning=transcription_warning)
 
-            print(f"[NLP] status=success utterance={uid}")
+            # Attach transcription warning if present
+            if transcription_warning and nlp_analysis:
+                nlp_analysis["transcription_warning"] = transcription_warning
+
+            proc_time = round(time.time() - t_start, 2)
+            print(
+                f"[DIAGNOSTICS] room={room_code} utterance={uid} speaker={speaker_label} "
+                f"mime={mime_type} size={audio_size} audio_duration={total_dur}s "
+                f"vad_segments={len(segments)} speech_duration={speech_dur}s "
+                f"model={model_name} proc_time={proc_time}s transcript='{full_text}'"
+            )
 
             return {
                 "status": "COMPLETED",
                 "stage": "completed",
                 "transcript": full_text,
+                "transcription_warning": transcription_warning,
                 "nlp_analysis": nlp_analysis,
                 "segments": segments,
                 "error_message": None,
@@ -264,12 +292,13 @@ class AudioService:
             }
 
         except Exception as nlp_err:
-            print(f"[NLP] status=failure error={nlp_err} (transcript preserved: '{full_text}')")
-            traceback.print_exc()
+            proc_time = round(time.time() - t_start, 2)
+            print(f"[DIAGNOSTICS] room={room_code} utterance={uid} speaker={speaker_label} transcript='{full_text}' error=NLP_ERROR: {nlp_err}")
             return {
                 "status": "NLP_ERROR",
                 "stage": "nlp",
                 "transcript": full_text,  # Transcript preserved!
+                "transcription_warning": transcription_warning,
                 "nlp_analysis": None,
                 "segments": segments,
                 "error_message": f"NLP analysis failed: {str(nlp_err)}",

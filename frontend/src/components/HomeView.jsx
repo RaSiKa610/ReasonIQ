@@ -71,7 +71,7 @@ export default function HomeView({ onRoomCreated, onJoinRequested }) {
         }}>
           <Sparkles size={16} color="var(--accent-cyan)" />
           <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-cyan)' }}>
-            ReasonIQ Platform &bull; Phase 1
+            ReasonIQ Platform
           </span>
         </div>
         <h1 className="font-display" style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.2, marginBottom: '12px' }}>

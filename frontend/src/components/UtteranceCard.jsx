@@ -183,6 +183,25 @@ export default function UtteranceCard({ utterance }) {
         </div>
       )}
 
+      {/* Transcription Quality Warning (when audio was unclear or low-confidence) */}
+      {(utterance.transcription_warning || nlp?.transcription_warning) && (
+        <div style={{
+          marginBottom: '16px',
+          padding: '10px 16px',
+          background: 'rgba(245, 158, 11, 0.08)',
+          borderRadius: 'var(--radius-sm)',
+          border: '1px solid rgba(245, 158, 11, 0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          color: 'var(--accent-amber)',
+          fontSize: '0.85rem'
+        }}>
+          <AlertTriangle size={16} color="var(--accent-amber)" />
+          <span>{utterance.transcription_warning || nlp.transcription_warning}</span>
+        </div>
+      )}
+
       {/* NLP Error State (Transcript is preserved above, analysis unavailable) */}
       {isNlpError && (
         <div style={{
@@ -301,10 +320,30 @@ export default function UtteranceCard({ utterance }) {
             </div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               <div>Component: <strong style={{ color: 'var(--text-primary)' }}>{nlp.argument_component?.prediction || nlp.argument_component?.label || 'General'}</strong></div>
-              <div>Quality Score: <strong style={{ color: 'var(--accent-cyan)' }}>{nlp.quality?.score !== null && nlp.quality?.score !== undefined ? `${nlp.quality.score}/100` : 'N/A'}</strong> ({nlp.quality?.level || 'Moderate'})</div>
-              {nlp.quality?.intervention_penalty > 0 && (
-                <div style={{ fontSize: '0.75rem', color: 'var(--accent-rose)' }}>
-                  Base: {nlp.quality.base_score} &bull; Penalty: -{nlp.quality.intervention_penalty} pts
+              <div>
+                Quality Score: <strong style={{ color: 'var(--accent-cyan)' }}>
+                  {nlp.quality?.score !== null && nlp.quality?.score !== undefined ? `${nlp.quality.score}/100` : 'Unavailable'}
+                </strong> {nlp.quality?.score !== null && nlp.quality?.score !== undefined && (
+                  <span>({nlp.quality?.level || 'Moderate'})</span>
+                )}
+              </div>
+              {nlp.quality?.base_score !== null && nlp.quality?.base_score !== undefined && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  Base: {nlp.quality.base_score}/100
+                  {nlp.quality.intervention_penalty > 0 && (
+                    <span style={{ color: 'var(--accent-rose)', marginLeft: '6px' }}>
+                      &bull; Deduction: -{nlp.quality.intervention_penalty} pts
+                    </span>
+                  )}
+                </div>
+              )}
+              {nlp.quality?.explanation?.length > 0 && (
+                <div style={{ marginTop: '4px', fontSize: '0.74rem' }}>
+                  {nlp.quality.explanation.filter(e => e.includes('penalty') || e.includes('pts') || e.includes('fallacy') || e.includes('deducted')).map((exp, idx) => (
+                    <div key={idx} style={{ color: 'var(--accent-amber)', marginTop: '2px' }}>
+                      &bull; {exp}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -337,11 +376,16 @@ export default function UtteranceCard({ utterance }) {
             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               <div>
                 Signal: <strong style={{ color: nlp.fallacy?.prediction ? 'var(--accent-rose)' : 'var(--text-primary)' }}>
-                  {nlp.fallacy?.prediction ? (nlp.fallacy.prediction.charAt(0).toUpperCase() + nlp.fallacy.prediction.slice(1)) : 'No strong signal detected'}
+                  {nlp.fallacy?.label || (nlp.fallacy?.prediction ? (nlp.fallacy.prediction.charAt(0).toUpperCase() + nlp.fallacy.prediction.slice(1)) : 'No strong signal detected')}
                 </strong>
               </div>
               {nlp.fallacy?.prediction && nlp.fallacy?.decision_strength !== undefined && nlp.fallacy?.decision_strength !== null && (
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Confidence: {(nlp.fallacy.decision_strength * 100).toFixed(1)}%</div>
+              )}
+              {nlp.fallacy?.explanation && (
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '3px' }}>
+                  {nlp.fallacy.explanation}
+                </div>
               )}
             </div>
           </div>

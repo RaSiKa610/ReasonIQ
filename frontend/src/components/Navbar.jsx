@@ -23,9 +23,6 @@ export default function Navbar({ roomState, onLeave, role }) {
               <span className="font-display" style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-0.02em', background: 'linear-gradient(to right, #f8fafc, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 ReasonIQ
               </span>
-              <span style={{ fontSize: '0.65rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 700 }}>
-                PHASE 1
-              </span>
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
               Real-Time Argument & Critical Thinking Analysis
