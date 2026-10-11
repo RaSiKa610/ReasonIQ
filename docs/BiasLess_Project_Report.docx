@@ -1,0 +1,2700 @@
+BiasLess: Real-Time AI-Powered Debate and Argument Analysis System
+
+Project Report – Updated Working Draft
+
+
+1. Project Overview
+
+BiasLess is an NLP-based system designed to analyze debate speech and provide explainable feedback on claims, evidence, logical fallacies, bias-aware language indicators, sentiment, named entities, and overall argument strength.
+
+The planned system will process live speech through speech-to-text and an NLP analysis pipeline before presenting feedback through a real-time dashboard.
+
+The current implementation is being developed incrementally, with the machine-learning components evaluated independently before complete real-time integration.
+
+
+2. Planned System Pipeline
+
+Live Debate
+     ↓
+Speech Capture
+     ↓
+Voice Activity Detection
+     ↓
+Speech-to-Text
+     ↓
+Speaker Segmentation
+     ↓
+NLP Analysis
+     ↓
+Argument Scoring
+     ↓
+Explainable Feedback
+     ↓
+Real-Time Dashboard
+
+The final system is planned as a near-real-time analyzer rather than an instantaneous system.
+
+
+3. Experimental Methodology
+
+The project follows an incremental machine-learning and NLP development workflow.
+
+Dataset preprocessing and baseline models are evaluated first, followed by model comparison and model selection. Validation data is used for model selection where a validation split is available, while held-out test data is reserved for final evaluation.
+
+The main development stages are:
+
+Dataset collection and inspection
+Data preprocessing
+Leakage checking
+Baseline model development
+Model comparison
+Model selection
+Final test evaluation
+Argument structure analysis
+Bias-aware language analysis
+Sentiment analysis
+Named Entity Recognition
+Evidence extraction
+Argument quality analysis
+Speech-to-text integration
+Real-time backend development
+Dashboard development
+Complete system integration
+
+
+4. Dataset: LOGIC Education
+
+The first NLP component developed for BiasLess is logical fallacy detection.
+
+The education portion of the LOGIC dataset was selected for the initial experiment. The dataset contains 13 fallacy categories:
+
+Ad hominem
+Ad populum
+Appeal to emotion
+Circular reasoning
+Equivocation
+Fallacy of credibility
+Fallacy of extension
+Fallacy of logic
+Fallacy of relevance
+False causality
+False dilemma
+Faulty generalization
+Intentional
+
+The original dataset contained:
+
+Split              Samples
+Training            1,849
+Validation            300
+Test                  300
+Total               2,449
+
+During preprocessing, duplicate text overlap between the official splits was investigated. Exact duplicate examples occurring across different splits were removed from the later split to prevent data leakage.
+
+After leakage removal:
+
+Split              Samples
+Training            1,849
+Validation            286
+Test                  286
+Total               2,421
+
+The final cleaned dataset contains 2,421 examples across 13 fallacy categories.
+
+The cleaned dataset was stored as:
+
+datasets/
+└── processed/
+    └── logic_edu_clean.csv
+
+
+5. LOGIC Data Preprocessing
+
+The following preprocessing steps were applied:
+
+Selected the source_article text column.
+Selected the updated_label target column.
+Removed unnecessary dataset columns.
+Normalized whitespace in the text.
+Removed leading and trailing whitespace.
+Investigated duplicate text entries.
+Removed duplicate examples occurring across different dataset splits to prevent leakage.
+Preserved the original LOGIC fallacy labels.
+Maintained separate TRAIN, DEV, and TEST partitions.
+
+The final leakage check produced:
+
+TRAIN ∩ DEV:   0
+TRAIN ∩ TEST:  0
+DEV ∩ TEST:    0
+
+Therefore, no exact text appears across the final training, validation, and test sets.
+
+
+6. Baseline Fallacy Detection Model
+
+6.1 TF-IDF + Logistic Regression
+
+The first baseline model used:
+
+Input Text
+    ↓
+TF-IDF Vectorization
+    ↓
+Logistic Regression
+    ↓
+13 Fallacy Classes
+
+The model used word-level TF-IDF features with unigram and bigram representations and balanced class weights.
+
+The model was trained on the 1,849-example training set and evaluated on the 286-example validation set.
+
+Validation Results
+
+Metric                 Score
+Accuracy               44.06%
+Macro Precision        40.67%
+Macro Recall           42.32%
+Macro F1               40.14%
+Weighted F1            45.43%
+
+This experiment established the first reproducible baseline for the BiasLess fallacy-detection component.
+
+
+7. Improved Linear SVM Model
+
+A second approach was evaluated using Linear Support Vector Machine with combined TF-IDF features.
+
+The improved representation combined two types of TF-IDF features:
+
+Word TF-IDF ─────┐
+                  ├──→ Linear SVM → Fallacy Class
+Character TF-IDF ┘
+
+Word-level features:
+
+Unigram and bigram representation
+ngram_range = (1,2)
+min_df = 2
+max_df = 0.95
+Sublinear TF enabled
+Up to 50,000 features
+
+Character-level features:
+
+Character n-grams from 3 to 5 characters
+min_df = 2
+max_df = 0.95
+Sublinear TF enabled
+Up to 30,000 features
+
+The Linear SVM used:
+
+C = 1.0
+class_weight = balanced
+
+The combination of word and character features was evaluated against the Logistic Regression baseline.
+
+
+8. LOGIC Model Comparison
+
+The validation experiments produced the following results:
+
+Model                                      Accuracy    Macro F1    Weighted F1
+TF-IDF + Logistic Regression               44.06%      40.14%      45.43%
+Word + Character TF-IDF + Linear SVM       56.64%      51.74%      56.89%
+
+Improvement:
+
+Accuracy: +12.58 percentage points
+Macro F1: +11.60 percentage points
+Weighted F1: +11.46 percentage points
+
+The Linear SVM with combined word and character TF-IDF features was selected for final evaluation.
+
+
+9. LOGIC Validation Results of the Selected Model
+
+The selected model achieved:
+
+Metric                 Result
+Accuracy               56.64%
+Macro Precision        53.76%
+Macro Recall           51.64%
+Macro F1               51.74%
+Weighted F1            56.89%
+
+Some of the stronger validation results were:
+
+Fallacy                  F1
+False dilemma            81.08%
+Ad populum               70.27%
+Ad hominem               61.54%
+Faulty generalization    60.50%
+False causality          59.09%
+Appeal to emotion        53.85%
+
+Lower performance was observed for several less-represented categories, particularly fallacy of credibility and equivocation.
+
+
+10. Selected Fallacy Detection Model
+
+The selected model is:
+
+Model: Linear SVM
+Features: Word TF-IDF + Character TF-IDF
+Word n-grams: (1,2)
+Character n-grams: (3,5)
+Class weighting: Balanced
+
+The model was saved as:
+
+models/
+└── logic_tfidf_svm_improved.pkl
+
+This model was selected based on validation performance and was subsequently evaluated on the held-out test set.
+
+
+11. Final LOGIC Test Evaluation
+
+After model comparison, the Word + Character TF-IDF Linear SVM was selected using the validation set. The held-out test set was then used for final evaluation.
+
+The final test set contained 286 examples.
+
+Final Test Performance
+
+Metric                 Score
+Accuracy               57.34%
+Macro Precision        57.86%
+Macro Recall           53.31%
+Macro F1               52.72%
+Weighted F1            56.23%
+
+The strongest individual categories on the test set were:
+
+Fallacy                  F1
+False dilemma            75.86%
+Ad populum               75.41%
+Ad hominem               71.60%
+False causality          63.16%
+Faulty generalization    58.12%
+Circular reasoning       55.81%
+
+Lower performance was observed for:
+
+Equivocation — 33.33%
+Fallacy of logic — 33.33%
+Fallacy of relevance — 34.29%
+Fallacy of credibility — 35.71%
+
+The relatively low performance for some categories is partly associated with their limited representation in the validation/test sets and semantic overlap between certain fallacy types.
+
+The test set was not used for model selection or hyperparameter tuning.
+
+The current LOGIC classifier should therefore be treated as an assistive analytical component rather than an authoritative judge of whether an argument contains a fallacy.
+
+
+12. LOGIC Interpretation of Results
+
+The experiments demonstrate that the representation used for text classification has a substantial effect on fallacy-detection performance.
+
+The initial Logistic Regression model achieved a validation Macro F1 of 40.14%. Replacing it with a Linear SVM and combining word-level and character-level TF-IDF features increased validation Macro F1 to 51.74%.
+
+The final held-out test evaluation produced a Macro F1 of 52.72% and an accuracy of 57.34%.
+
+The results indicate that the model can identify several fallacy categories effectively, particularly:
+
+False dilemma
+Ad populum
+Ad hominem
+False causality
+Faulty generalization
+
+However, performance remains weaker for some categories with fewer examples or stronger semantic similarity to other fallacies.
+
+
+13. Argument Component Detection: AAEC
+
+Following the LOGIC experiments, the project was extended to argument-component detection using the Argument Annotated Essays Corpus (AAEC).
+
+The AAEC dataset contains 402 annotated persuasive essays.
+
+The BRAT annotations were parsed to extract:
+
+MajorClaim
+Claim
+Premise
+
+The official essay-level split was preserved:
+
+322 training essays
+80 test essays
+
+The initial preprocessing produced 6,089 argument-component instances.
+
+Two exact text duplicates were found across the training and test sets. The duplicate test instances were removed to prevent leakage.
+
+The resulting dataset contained:
+
+6,087 samples
+4,823 training samples
+1,264 test samples
+
+Final class distribution:
+
+Class          Samples
+Premise        3,832
+Claim          1,506
+MajorClaim       749
+
+The cleaned dataset was stored as:
+
+datasets/
+└── processed/
+    └── aaec_components_clean.csv
+
+
+14. AAEC Model Development
+
+Three approaches were evaluated.
+
+
+14.1 TF-IDF + Logistic Regression
+
+Test evaluation produced:
+
+Accuracy:    55.70%
+Macro F1:     45.22%
+Weighted F1:  56.98%
+
+
+14.2 TF-IDF + Linear SVM
+
+Test evaluation produced:
+
+Accuracy:    58.15%
+Macro F1:     45.00%
+Weighted F1:  57.80%
+
+
+14.3 Word + Character TF-IDF + Linear SVM
+
+The improved representation substantially increased performance.
+
+Metric                 Result
+Accuracy               65.43%
+Macro F1               53.09%
+Weighted F1            64.61%
+
+Per-class F1:
+
+Class          F1
+Claim          37.52%
+MajorClaim     42.91%
+Premise        78.83%
+
+The model was saved as:
+
+models/
+└── aaec_tfidf_svm_improved.pkl
+
+The results indicate that Premise detection is substantially stronger than distinguishing Claim and MajorClaim. This limitation will be considered when integrating the classifier into the real-time analysis pipeline.
+
+
+15. Bias-Aware Language Detection: WNC
+
+The next NLP component developed for BiasLess is bias-aware language detection using the Wikipedia Neutrality Corpus (WNC).
+
+WNC provides paired source and neutralized versions of sentences from Wikipedia revisions. For the binary experiment, the source sentence is treated as the bias-associated version and the corresponding neutralized sentence is treated as the neutral reference.
+
+This labeling does not mean that a sentence is objectively or universally biased. The model learns wording patterns associated with neutrality-oriented revisions and is therefore used as a bias-awareness signal rather than as absolute ground truth.
+
+The WNC word-level files used are:
+
+biased.word.train
+biased.word.dev
+biased.word.test
+
+The source-target pairs were converted into a binary classification dataset:
+
+Source sentence
+      ↓
+Label 1 = Bias-associated
+
+Neutralized sentence
+      ↓
+Label 0 = Neutral reference
+
+
+16. WNC Preprocessing
+
+The WNC preprocessing workflow included:
+
+Reading the official train, development, and test files.
+Extracting source and target raw sentences.
+Normalizing whitespace.
+Removing empty examples.
+Creating binary source/target examples.
+Removing duplicate texts while preserving the original split order.
+Checking for cross-split text leakage.
+Saving the cleaned binary dataset.
+
+The cleaned WNC source-pair dataset contained:
+
+Split       Pairs
+Train       53,693
+Dev            699
+Test           995
+Total       55,387
+
+Converting each pair into a biased and neutral example initially produced:
+
+110,774 examples
+
+After duplicate text removal:
+
+Label       Meaning             Examples
+0           Neutral             54,693
+1           Bias-associated     55,387
+Total                           110,080
+
+Final split sizes:
+
+Split       Neutral (0)    Bias-associated (1)    Total
+Train       53,026         53,693                106,719
+Dev            690            699                  1,389
+Test           977            995                  1,972
+
+Cross-split leakage check:
+
+TRAIN ∩ DEV:   0
+TRAIN ∩ TEST:  0
+DEV ∩ TEST:    0
+
+The final dataset was saved as:
+
+datasets/
+└── processed/
+    └── wnc_binary_clean.csv
+
+
+17. WNC Dataset Examples
+
+The paired data demonstrates how evaluative or subjective wording can be removed during neutralization.
+
+Example 1
+
+Bias-associated/source:
+
+"...especially the controversial british activist..."
+
+Neutralized:
+
+"...especially the british activist..."
+
+
+Example 2
+
+Bias-associated/source:
+
+"...providing interesting facts about chloroform."
+
+Neutralized:
+
+"...providing facts about chloroform."
+
+These examples support the planned explainable approach in BiasLess, where the system can identify potentially loaded or subjective wording instead of presenting only a binary prediction.
+
+
+18. WNC Baseline Model
+
+The first WNC model uses:
+
+Input Text
+    ↓
+Word TF-IDF
+    ↓
+Logistic Regression
+    ↓
+Neutral / Bias-associated
+
+The model uses word-level unigram and bigram TF-IDF features with:
+
+min_df = 2
+max_df = 0.95
+Sublinear TF scaling
+English stop-word removal
+Balanced class weights
+
+The model was trained on 106,719 training examples and evaluated on 1,389 development examples before final evaluation on the held-out 1,972-example test set.
+
+Validation Results
+
+Metric                 Score
+Accuracy               67.96%
+Macro Precision        68.21%
+Macro Recall           68.00%
+Macro F1               67.88%
+
+Final Test Results
+
+Metric                 Score
+Accuracy               65.92%
+Macro Precision        66.37%
+Macro Recall           65.99%
+Macro F1               65.75%
+Weighted F1            65.75%
+
+The baseline model was saved as:
+
+models/
+└── wnc_tfidf_logistic.pkl
+
+These results established the baseline for the WNC bias-aware language component.
+
+
+19. WNC Improved Word + Character TF-IDF Linear SVM
+
+A second WNC approach was evaluated using a Linear Support Vector Machine with combined word-level and character-level TF-IDF features.
+
+The word-level representation used unigram and bigram features with a maximum of 50,000 features.
+
+The character-level representation used character n-grams from 3 to 5 characters with a maximum of 30,000 features.
+
+Word TF-IDF configuration:
+
+ngram_range = (1,2)
+min_df = 2
+max_df = 0.95
+sublinear_tf = True
+max_features = 50,000
+
+Character TF-IDF configuration:
+
+ngram_range = (3,5)
+min_df = 2
+max_df = 0.95
+sublinear_tf = True
+max_features = 30,000
+
+Linear SVM configuration:
+
+C = 1.0
+class_weight = balanced
+
+The development-set results were:
+
+Metric                 Result
+Accuracy               69.47%
+Macro Precision        69.48%
+Macro Recall           69.48%
+Macro F1               69.47%
+
+The development Macro F1 comparison was:
+
+Model                                      Dev Macro F1
+TF-IDF + Logistic Regression               67.88%
+Word + Character TF-IDF + Linear SVM       69.47%
+
+Because the Word + Character TF-IDF + Linear SVM produced the higher development Macro F1, it was selected for final held-out test evaluation.
+
+
+20. WNC Final Test Evaluation
+
+After model selection using the development set, the selected Word + Character TF-IDF Linear SVM was evaluated on the untouched WNC test set.
+
+The test set contained 1,972 examples.
+
+Final Test Performance:
+
+Metric                 Score
+Accuracy               67.85%
+Macro Precision        67.94%
+Macro Recall           67.88%
+Macro F1               67.83%
+Weighted F1            67.83%
+
+Test Classification Report:
+
+Class              Precision    Recall    F1
+Neutral            66%          71%       69%
+Bias-associated     69%          65%       67%
+
+The test set was not used for model selection or hyperparameter tuning.
+
+The final selected model was saved as:
+
+models/
+└── wnc_tfidf_svm_improved.pkl
+
+
+21. Explainable Bias-Aware Analysis
+
+The BiasLess bias component will not treat the classifier as a definitive detector of a person's or argument's bias.
+
+The analysis combines transparent indicators, including:
+
+Loaded or evaluative language
+Emotionally charged wording
+Extremity or exaggeration
+Subjective language
+Stereotyping or broad generalization patterns
+Sentiment intensity
+Potentially bias-associated wording identified by the trained WNC classifier
+
+The final system can provide feedback such as:
+
+Potentially loaded wording detected.
+
+Flagged term:
+"controversial"
+
+Reason:
+
+Evaluative wording associated with the neutralized revision.
+
+This approach is intended to make the system's feedback more interpretable and suitable for debate analysis.
+
+
+22. Sentiment Analysis
+
+Sentiment analysis was implemented using the open-source pretrained model:
+
+cardiffnlp/twitter-roberta-base-sentiment-latest
+
+The model produces three sentiment classes:
+
+Positive
+Neutral
+Negative
+
+Unlike the LOGIC, AAEC, and WNC classifiers, this component is not trained from scratch for BiasLess. A pretrained open-source model is integrated locally.
+
+The model was tested on debate-style statements and successfully produced sentiment labels with confidence scores.
+
+Example results included:
+
+"I completely agree with this argument."
+→ Positive
+→ Confidence: 0.8527
+
+"This policy is absolutely terrible."
+→ Negative
+→ Confidence: 0.9387
+
+"The evidence supports the proposed solution."
+→ Neutral
+→ Confidence: 0.7161
+
+"I am not convinced by your argument."
+→ Negative
+→ Confidence: 0.7323
+
+"This is a reasonable approach."
+→ Positive
+→ Confidence: 0.6008
+
+"That claim is completely ridiculous."
+→ Negative
+→ Confidence: 0.9202
+
+"There are both advantages and disadvantages to this approach."
+→ Neutral
+→ Confidence: 0.7843
+
+The sentiment component is used as a supporting linguistic signal. It is not treated as a direct measure of argument quality or bias.
+
+The reusable implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\sentiment.py
+
+
+23. Named Entity Recognition
+
+Named Entity Recognition was added as a supporting NLP component for identifying important entities within debate statements.
+
+The implementation uses the open-source pretrained model:
+
+dslim/bert-base-NER
+
+The model is integrated locally using the Hugging Face Transformers library.
+
+The NER model identifies entity categories such as:
+
+PER  → Person
+ORG  → Organization
+LOC  → Location
+MISC → Miscellaneous
+
+Example:
+
+Input:
+
+"According to WHO, India needs stronger healthcare policies."
+
+Detected entities:
+
+WHO
+→ ORG
+
+India
+→ LOC
+
+Another example:
+
+"Microsoft CEO Satya Nadella spoke at an event in Mumbai."
+
+Detected entities:
+
+Microsoft
+→ ORG
+
+Satya Nadella
+→ PER
+
+Mumbai
+→ LOC
+
+The model is used directly without fine-tuning on a BiasLess-specific NER dataset.
+
+Custom post-processing was added to improve entity-span handling. For example, the pretrained model initially returned the name "Elon Musk" as fragmented predictions:
+
+El
+→ ORG
+
+on Musk
+→ PER
+
+The custom post-processing combines the overlapping entity spans and produces:
+
+Elon Musk
+→ PER
+
+This post-processing changes the model output representation but does not modify the pretrained model weights.
+
+Therefore, the NER component is a pretrained model with custom rule-based output processing, not a fine-tuned model.
+
+The reusable implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\ner.py
+
+NER is used as a supporting component for later evidence and argument analysis.
+
+
+24. Evidence Extraction
+
+Evidence extraction was implemented as a rule-based NLP component that combines NER results with linguistic and numerical patterns.
+
+The purpose of the component is to identify signals that a speaker is presenting or referring to evidence.
+
+The component does not verify whether the presented evidence is factually correct.
+
+The evidence extraction pipeline is:
+
+Debate Statement
+       ↓
+NER
+       ↓
+Source Detection
+       ↓
+Statistic Detection
+       ↓
+Date Detection
+       ↓
+Evidence Indicator Detection
+       ↓
+Evidence Presence Score
+
+
+24.1 Evidence Indicators
+
+The extractor identifies phrases such as:
+
+according to
+research shows
+research suggests
+study found
+study shows
+studies show
+data shows
+data suggests
+evidence shows
+evidence suggests
+report states
+report says
+survey found
+survey shows
+experts say
+scientists say
+scientists found
+researchers found
+analysis shows
+statistics show
+
+
+24.2 Source Detection
+
+The extractor identifies source patterns such as:
+
+according to WHO
+research from Oxford University
+study from Oxford University
+report by Microsoft
+reported by an organization
+published by an institution
+
+For example:
+
+"A 2024 study from Oxford University found that renewable energy reduced emissions."
+
+The extractor identifies:
+
+Source:
+Oxford University
+
+Date:
+2024
+
+The source extraction patterns were adjusted so that only the likely source name is extracted instead of the remaining part of the sentence.
+
+
+24.3 Statistical Information
+
+The extractor identifies numerical evidence patterns including:
+
+40%
+75 percent
+10 million
+5 billion
+₹500 crore
+$2 million
+
+For example:
+
+"Research shows that 75 percent of students prefer online learning."
+
+The extractor identifies:
+
+Statistic:
+75 percent
+
+Evidence indicator:
+research shows
+
+
+24.4 Date Detection
+
+The extractor detects years and common date formats.
+
+Examples:
+
+2024
+2020
+15 September 2026
+September 15, 2026
+
+It can also detect multiple years within a sentence.
+
+For example:
+
+"Global temperatures increased between 2015 and 2020."
+
+Detected dates:
+
+2015
+2020
+
+
+24.5 Evidence Presence Score
+
+The extractor calculates an explainable Evidence Presence Score.
+
+The current heuristic assigns:
+
+Evidence indicator present:
++0.30
+
+Explicit source present:
++0.25
+
+Statistic present:
++0.20
+
+Date present:
++0.10
+
+Person or organization entity present:
++0.15
+
+The final score is limited to a maximum of 1.0.
+
+The score represents the presence of evidence-related linguistic signals.
+
+It does not represent:
+
+Factual correctness
+Source reliability
+Truthfulness
+Argument validity
+Scientific strength of evidence
+
+
+24.6 Example Evidence Analysis
+
+Input:
+
+"According to WHO, India reduced malaria cases by 40% in 2020."
+
+Output:
+
+Source:
+WHO
+
+Entity:
+India → LOC
+
+Statistic:
+40%
+
+Date:
+2020
+
+Evidence indicator:
+according to
+
+Evidence Presence Score:
+1.0
+
+Evidence Bearing:
+True
+
+
+Another example:
+
+"A 2024 study from Oxford University found that renewable energy reduced emissions."
+
+Output:
+
+Source:
+Oxford University
+
+Date:
+2024
+
+Entity:
+Oxford University → ORG
+
+Evidence Presence Score:
+0.5
+
+Evidence Bearing:
+True
+
+
+Another example:
+
+"The government announced a new education policy."
+
+Output:
+
+Evidence Presence Score:
+0.0
+
+Evidence Bearing:
+False
+
+No source, statistic, date, or explicit evidence indicator was detected.
+
+
+24.7 Evidence Extraction Implementation
+
+The reusable implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\evidence.py
+
+The evidence extractor currently uses:
+
+NER
+Regular expressions
+Source patterns
+Evidence indicator matching
+Date detection
+Statistical pattern detection
+Explainable scoring rules
+
+No external API is required for this component.
+
+
+25. Current BiasLess NLP Architecture
+
+At the current stage, BiasLess contains three custom-trained classification components and several supporting pretrained and rule-based NLP components.
+
+The current NLP components are:
+
+Fallacy Detection – LOGIC Education dataset using Word + Character TF-IDF with Linear SVM.
+Argument Component Detection – AAEC v2 dataset using Word + Character TF-IDF with Linear SVM.
+Bias-Aware Language Detection – Wikipedia Neutrality Corpus using Word + Character TF-IDF with Linear SVM.
+Sentiment Analysis – pretrained RoBERTa sentiment model.
+Named Entity Recognition – pretrained BERT NER model with custom entity-span post-processing.
+Evidence Extraction – rule-based component combining NER and linguistic patterns.
+Argument Quality Analysis – explainable heuristic scoring layer combining the outputs of the NLP components.
+
+The current architecture is:
+
+                         Debate Utterance
+                                │
+             ┌──────────────────┼──────────────────┐
+             ↓                  ↓                  ↓
+      Argument Component      Fallacy          Bias-Aware
+          Classifier         Detection          Language
+                              Classifier         Analysis
+             │                  │                  │
+             ↓                  ↓                  ↓
+       MajorClaim /        13 Fallacy       Neutral /
+       Claim / Premise      Categories      Bias-associated
+                                               signal
+             │                  │                  │
+             └──────────────────┼──────────────────┘
+                                ↓
+                         Sentiment Analysis
+                                ↓
+                       Named Entity Recognition
+                                ↓
+                         Evidence Extraction
+                                ↓
+                        Argument Quality Score
+                                ↓
+                       Explainable Feedback
+
+The system therefore combines supervised machine-learning models with pretrained NLP models and rule-based analysis.
+
+26. Current Model Summary
+Component	Dataset	Current Model	Result
+Fallacy Detection	LOGIC Education	Word + Character TF-IDF + Linear SVM	57.34% Test Accuracy; 52.72% Macro F1
+Argument Components	AAEC v2	Word + Character TF-IDF + Linear SVM	65.43% Test Accuracy; 53.09% Macro F1
+Bias-Aware Detection	WNC	Word + Character TF-IDF + Linear SVM	67.85% Test Accuracy; 67.83% Macro F1
+Sentiment Analysis	Pretrained model	cardiffnlp/twitter-roberta-base-sentiment-latest	Positive / Neutral / Negative
+Named Entity Recognition	Pretrained model	dslim/bert-base-NER	PER / ORG / LOC / MISC
+Evidence Extraction	No external dataset	Rule-Based Evidence Extractor	Evidence Presence Score
+Argument Quality	Outputs of completed NLP components	Explainable heuristic scoring	0–100 review-oriented score
+
+The WNC Word + Character TF-IDF Linear SVM was selected after comparison with the Logistic Regression baseline.
+
+The development-set Macro F1 values were:
+
+Logistic Regression: 67.88%
+Linear SVM:          69.47%
+
+The selected Linear SVM achieved on the held-out test set:
+
+Accuracy:        67.85%
+Macro Precision: 67.94%
+Macro Recall:    67.88%
+Macro F1:        67.83%
+Weighted F1:     67.83%
+27. Current Saved Models
+
+The currently trained model artifacts are:
+
+C:\Users\Rasika\BiasLess\models\logic_tfidf_svm_improved.pkl
+
+C:\Users\Rasika\BiasLess\models\aaec_tfidf_svm_improved.pkl
+
+C:\Users\Rasika\BiasLess\models\wnc_tfidf_svm_improved.pkl
+
+The sentiment implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\sentiment.py
+
+The NER implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\ner.py
+
+The evidence extraction implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\evidence.py
+
+The argument-quality implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\argument_quality.py
+28. Argument Quality Analysis
+
+The Argument Quality module combines the outputs of the completed NLP components into an explainable review-oriented score.
+
+The module does not treat any individual classifier prediction as ground truth. Instead, it combines multiple linguistic signals.
+
+The analysis considers:
+
+Argument component prediction
+Potential fallacy signal
+Potentially bias-associated wording
+Sentiment intensity
+Evidence presence
+Text specificity
+Named entities
+Statistics
+Dates
+
+The general flow is:
+
+Debate Statement
+       ↓
+Argument Component Detection
+       ↓
+Fallacy Detection
+       ↓
+Bias-Aware Language Detection
+       ↓
+Sentiment Analysis
+       ↓
+Evidence Analysis
+       ↓
+Specificity Analysis
+       ↓
+Explainable Scoring
+       ↓
+Argument Quality Score
+
+The resulting score is normalized to a range of:
+
+0 – 100
+
+The current interpretation is:
+
+75 – 100 → Strong
+50 – 74  → Moderate
+0 – 49   → Needs Review
+
+The score is intended as an assistive indicator rather than an objective measurement of the quality or correctness of an argument.
+
+Scoring Factors
+
+The module rewards signals such as:
+
+recognizable argument components
+presence of evidence
+specific entities, numbers, and dates
+sufficiently specific statements
+
+It applies penalties for:
+
+strong potential fallacy signals
+strong bias-associated wording signals
+strong non-neutral sentiment
+limited evidence
+low specificity
+
+The fallacy and bias classifier outputs are treated as model signals rather than definitive judgments.
+
+In particular, the LOGIC label "intentional" is not treated as a logical fallacy during argument-quality scoring because it is a dataset category rather than a standard fallacy category.
+
+Example
+
+For:
+
+"According to WHO, India reduced malaria cases by 40% in 2020."
+
+The system identifies:
+
+Argument Component: Premise
+Evidence Source: WHO
+Statistic: 40%
+Date: 2020
+Evidence Presence Score: 1.0
+Specificity: High
+
+The combined quality score is therefore higher than statements that contain strong emotional language but provide little supporting information.
+
+The implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\argument_quality.py
+29. Counterargument Generation
+
+Counterargument generation has been implemented as an explainable rule-based component of the BiasLess NLP pipeline.
+
+The purpose of this module is to generate a constructive response to a debate statement based on the analytical signals detected by the previously developed NLP components.
+
+Unlike a general-purpose generative language model, the current counterargument generator is deterministic and template-based. This makes the generated feedback easier to explain and keeps the implementation local and zero-cost.
+
+
+29.1 Counterargument Generation Inputs
+
+The counterargument generator uses information from:
+
+Potential fallacy analysis
+Bias-aware language analysis
+Evidence analysis
+Argument-quality analysis
+Text specificity
+
+The general flow is:
+
+Debate Statement
+       ↓
+NLP Analysis
+       ↓
+Potential Fallacy Signal
+       ↓
+Bias-Aware Language Signal
+       ↓
+Evidence Presence
+       ↓
+Specificity Analysis
+       ↓
+Counterargument Strategy Selection
+       ↓
+Explainable Counterargument
+
+
+29.2 Fallacy-Based Counterarguments
+
+The module contains specific response strategies for several fallacy categories, including:
+
+Ad populum
+Ad hominem
+Appeal to emotion
+False causality
+False dilemma
+Faulty generalization
+Circular reasoning
+Equivocation
+Fallacy of relevance
+Fallacy of extension
+Fallacy of credibility
+Fallacy of logic
+
+A fallacy prediction is considered for counterargument generation only when its decision-strength signal reaches the configured threshold.
+
+Current threshold:
+
+Decision Strength >= 0.40
+
+The LOGIC dataset labels:
+
+intentional
+miscellaneous
+
+are not treated as actionable logical fallacies.
+
+This prevents dataset-specific labels from automatically producing misleading fallacy feedback.
+
+
+29.3 Bias-Aware Response
+
+The counterargument generator can also respond to potentially bias-associated wording.
+
+A bias-associated prediction is considered when:
+
+Prediction = 1
+
+and:
+
+Decision Strength >= 0.40
+
+The system does not describe this output as proof that a statement or speaker is biased.
+
+Instead, it treats the classifier output as a potential wording signal that may justify reviewing emotionally loaded or subjective language.
+
+
+29.4 Evidence-Based Response
+
+Evidence extraction is also used during counterargument generation.
+
+If:
+
+Evidence Presence Score < 0.40
+
+the generator may recommend strengthening the argument using supporting evidence.
+
+Examples of useful evidence include:
+
+Statistics
+Named sources
+Research findings
+Reports
+Dates
+Relevant organizations
+Verifiable supporting information
+
+This allows the counterargument system to respond not only to potential reasoning problems but also to insufficient support.
+
+
+29.5 Specificity-Based Response
+
+The system also considers the specificity of a statement.
+
+When the specificity score is low, the counterargument generator can request:
+
+More concrete examples
+Specific evidence
+Relevant statistics
+Named sources
+Clearer explanation
+
+This helps avoid producing the same generic counterargument for every statement.
+
+
+29.6 Counterargument Output
+
+The generator returns a structured result containing:
+
+counterargument
+reason
+strategy
+based_on
+
+The output format is conceptually:
+
+{
+    "counterargument": "...",
+    "reason": "...",
+    "strategy": "...",
+    "based_on": [...]
+}
+
+This structure is useful for the future dashboard because the interface can separately display:
+
+Generated response
+Reason for the response
+Strategy used
+Analytical signals responsible for the response
+
+
+29.7 Example Counterargument Analysis
+
+Input:
+
+"Everyone knows that this useless policy will destroy our country."
+
+The integrated analysis identifies potential signals including:
+
+Argument Component:
+Premise
+
+Potential Fallacy:
+Ad populum
+
+Fallacy Decision Strength:
+0.6051
+
+Bias-Associated Prediction:
+1
+
+Bias Decision Strength:
+0.6352
+
+Sentiment:
+Negative
+
+Sentiment Score:
+0.9361
+
+Evidence Presence Score:
+0.0
+
+Specificity:
+Low
+
+Argument Quality Score:
+43
+
+Quality Level:
+Needs Review
+
+The counterargument generator therefore prioritizes a response addressing the appeal-to-popularity pattern rather than accepting popularity as evidence for the claim.
+
+The fallacy and bias results remain model predictions and are not treated as definitive judgments.
+
+
+29.8 Counterargument Implementation
+
+The reusable implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\counterargument.py
+
+The current implementation:
+
+Runs locally
+Requires no paid API
+Requires no external LLM
+Uses explainable templates
+Uses outputs from previously completed NLP components
+Produces structured counterargument information
+
+A local language model may later be investigated as an optional enhancement for more natural response generation, but it is not required for the current BiasLess implementation.
+
+
+30. Integrated BiasLess NLP Engine
+
+After completing the individual NLP modules, they were integrated into a unified NLP engine.
+
+The implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\engine.py
+
+The purpose of the engine is to provide one common interface for analyzing a debate utterance instead of requiring the backend to call every NLP component independently.
+
+
+30.1 Integrated Components
+
+The current engine integrates:
+
+Argument Component Detection
+Fallacy Detection
+Bias-Aware Language Detection
+Sentiment Analysis
+Named Entity Recognition
+Evidence Extraction
+Argument Quality Analysis
+Counterargument Generation
+
+The integrated flow is:
+
+                         Debate Utterance
+                                │
+             ┌──────────────────┼──────────────────┐
+             ↓                  ↓                  ↓
+      Argument Component      Fallacy          Bias-Aware
+          Detection          Detection          Language
+             │                  │               Detection
+             └──────────────────┼──────────────────┘
+                                ↓
+                         Sentiment Analysis
+                                ↓
+                    Named Entity Recognition
+                                ↓
+                       Evidence Extraction
+                                ↓
+                       Specificity Analysis
+                                ↓
+                    Argument Quality Analysis
+                                ↓
+                  Counterargument Generation
+                                ↓
+                     Structured NLP Result
+
+
+30.2 Output Normalization
+
+During integration, the outputs produced by different NLP modules required normalization because individual components use different internal result structures.
+
+The engine therefore includes normalization logic for:
+
+Argument component output
+Fallacy output
+Bias-aware output
+Sentiment output
+Evidence output
+Argument-quality output
+
+This creates a consistent representation that can later be transmitted through the FastAPI backend and WebSocket connection.
+
+
+30.3 SVM Decision Strength
+
+The trained Linear SVM classifiers do not naturally produce probability values.
+
+Therefore, their raw decision-function margins are not presented as probabilities.
+
+For internal review-oriented scoring, BiasLess converts the absolute SVM margin into a bounded decision-strength indicator:
+
+decision_strength = |margin| / (1 + |margin|)
+
+The resulting value lies between 0 and 1.
+
+This value is called Decision Strength rather than Confidence or Probability because it is derived from the SVM decision margin and is not a calibrated probability.
+
+
+30.4 Integrated Engine Testing
+
+The integrated NLP engine was successfully executed on multiple debate-style statements.
+
+The engine initialized all required models and completed the complete text-analysis pipeline.
+
+
+Test Example 1
+
+Input:
+
+"Everyone knows that this useless policy will destroy our country."
+
+Results:
+
+Argument Component:
+Premise
+
+Argument Component Decision Strength:
+0.5469
+
+Potential Fallacy:
+Ad populum
+
+Fallacy Decision Strength:
+0.6051
+
+Bias-Associated Prediction:
+1
+
+Bias Decision Strength:
+0.6352
+
+Sentiment:
+Negative
+
+Sentiment Score:
+0.9361
+
+Evidence Presence Score:
+0.0
+
+Argument Quality Score:
+43
+
+Quality Level:
+Needs Review
+
+The counterargument generator produced a response focused on the potential appeal-to-popularity reasoning pattern.
+
+
+Test Example 2
+
+Input:
+
+"Research shows that 75 percent of students prefer online learning."
+
+Results:
+
+Argument Component:
+Premise
+
+Argument Component Decision Strength:
+0.5866
+
+LOGIC Prediction:
+Intentional
+
+Decision Strength:
+0.5185
+
+Bias Decision Strength:
+0.2202
+
+Sentiment:
+Positive
+
+Sentiment Score:
+0.7340
+
+Evidence Presence Score:
+0.5
+
+Detected Statistic:
+75 percent
+
+Evidence Indicator:
+research shows
+
+Argument Quality Score:
+70
+
+Quality Level:
+Moderate
+
+Because "intentional" is not treated as an actionable logical fallacy and the bias signal was weak, no fallacy or bias penalty was applied.
+
+The generated response instead focused on improving specificity.
+
+
+Test Example 3
+
+Input:
+
+"According to WHO, India reduced malaria cases by 40% in 2020."
+
+Results:
+
+Argument Component:
+Premise
+
+Argument Component Decision Strength:
+0.5315
+
+Potential Fallacy Prediction:
+Ad hominem
+
+Fallacy Decision Strength:
+0.5726
+
+Bias Prediction:
+0
+
+Bias Decision Strength:
+0.4494
+
+Sentiment:
+Positive
+
+Sentiment Score:
+0.6683
+
+Evidence Presence Score:
+1.0
+
+Detected Source:
+WHO
+
+Detected Statistic:
+40%
+
+Detected Date:
+2020
+
+Detected Evidence Indicator:
+according to
+
+Detected Entities:
+WHO → ORG
+India → LOC
+
+Specificity Score:
+1.0
+
+Argument Quality Score:
+78
+
+Quality Level:
+Strong
+
+The LOGIC classifier predicted a potential ad hominem signal for this sentence. This appears inconsistent with the ordinary interpretation of the sentence and demonstrates an important limitation of the trained classifier.
+
+BiasLess therefore presents fallacy results as potential model signals rather than unquestionable conclusions.
+
+
+Test Example 4
+
+Input:
+
+"The government announced a new education policy."
+
+Results:
+
+Argument Component:
+Claim
+
+Argument Component Decision Strength:
+0.3384
+
+Potential Fallacy:
+Faulty generalization
+
+Fallacy Decision Strength:
+0.5691
+
+Bias Prediction:
+0
+
+Bias Decision Strength:
+0.3566
+
+Sentiment:
+Neutral
+
+Sentiment Score:
+0.5219
+
+Evidence Presence Score:
+0.0
+
+Argument Quality Score:
+53
+
+Quality Level:
+Moderate
+
+The generated counterargument focused on the potential generalization signal and the absence of supporting detail.
+
+
+30.5 Integration Result
+
+The successful engine test confirms that the completed text-analysis modules can operate through one unified pipeline.
+
+The current text pipeline is therefore:
+
+Text Utterance
+      ↓
+Argument Component Detection
+      ↓
+Fallacy Detection
+      ↓
+Bias-Aware Language Detection
+      ↓
+Sentiment Analysis
+      ↓
+Named Entity Recognition
+      ↓
+Evidence Extraction
+      ↓
+Argument Quality Analysis
+      ↓
+Counterargument Generation
+      ↓
+Structured BiasLess Analysis
+
+This completes the main text-based NLP integration stage of BiasLess.
+
+
+31. Current Model and Component Summary
+
+Component:
+Fallacy Detection
+
+Dataset:
+LOGIC Education
+
+Model:
+Word + Character TF-IDF + Linear SVM
+
+Result:
+57.34% Test Accuracy
+52.72% Macro F1
+
+
+Component:
+Argument Component Detection
+
+Dataset:
+AAEC v2
+
+Model:
+Word + Character TF-IDF + Linear SVM
+
+Result:
+65.43% Test Accuracy
+53.09% Macro F1
+
+
+Component:
+Bias-Aware Language Detection
+
+Dataset:
+Wikipedia Neutrality Corpus
+
+Model:
+Word + Character TF-IDF + Linear SVM
+
+Result:
+67.85% Test Accuracy
+67.83% Macro F1
+
+
+Component:
+Sentiment Analysis
+
+Model:
+cardiffnlp/twitter-roberta-base-sentiment-latest
+
+Method:
+Pretrained local model
+
+Output:
+Positive / Neutral / Negative
+
+
+Component:
+Named Entity Recognition
+
+Model:
+dslim/bert-base-NER
+
+Method:
+Pretrained local model with custom entity-span post-processing
+
+Output:
+PER / ORG / LOC / MISC
+
+
+Component:
+Evidence Extraction
+
+Method:
+Rule-based evidence extractor with NER
+
+Output:
+Evidence Presence Score
+Sources
+Statistics
+Dates
+Indicators
+Entities
+
+
+Component:
+Argument Quality Analysis
+
+Method:
+Explainable heuristic scoring
+
+Output:
+0–100 review-oriented score
+Strong / Moderate / Needs Review
+
+
+Component:
+Counterargument Generation
+
+Method:
+Rule-based explainable template generator
+
+Output:
+Counterargument
+Reason
+Strategy
+Based-on signals
+
+
+Component:
+Integrated NLP Engine
+
+Method:
+Unified BiasLessNLPEngine
+
+Output:
+Complete structured analysis of a debate utterance
+
+
+32. Current Saved Models and Implementations
+
+The currently selected trained model artifacts are:
+
+C:\Users\Rasika\BiasLess\models\logic_tfidf_svm_improved.pkl
+
+C:\Users\Rasika\BiasLess\models\aaec_tfidf_svm_improved.pkl
+
+C:\Users\Rasika\BiasLess\models\wnc_tfidf_svm_improved.pkl
+
+
+The sentiment implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\sentiment.py
+
+
+The NER implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\ner.py
+
+
+The evidence extraction implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\evidence.py
+
+
+The argument-quality implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\argument_quality.py
+
+
+The counterargument implementation is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\counterargument.py
+
+
+The integrated NLP engine is:
+
+C:\Users\Rasika\BiasLess\backend\nlp\engine.py
+
+33. Near-Real-Time Speech Processing Architecture
+
+With the text-based NLP engine successfully integrated, the project has now progressed to the speech-processing stage.
+
+The speech-processing architecture consists of:
+
+Microphone / Audio Input
+        ↓
+Voice Activity Detection
+        ↓
+Speech Region Extraction
+        ↓
+faster-whisper Local Speech-to-Text
+        ↓
+Completed Text Utterance
+        ↓
+BiasLess NLP Engine
+        ↓
+Structured Analysis
+        ↓
+FastAPI + WebSocket
+        ↓
+React Dashboard
+
+The final system is intended to operate in near-real-time rather than instantaneously.
+
+
+33.1 Speech-to-Text Implementation
+
+The speech-to-text component has been implemented using:
+
+faster-whisper
+
+The implementation runs locally and does not require a paid speech-recognition API.
+
+The current configuration is:
+
+Model:
+base
+
+Device:
+CPU
+
+Compute Type:
+int8
+
+Language:
+English
+
+Beam Size:
+5
+
+VAD Filter:
+Enabled
+
+The reusable implementation is:
+
+C:\Users\Rasika\BiasLess\backend\speech\transcriber.py
+
+The component provides:
+
+- Full transcription
+- Timestamped speech segments
+- Detected language
+- Language probability
+
+A sample audio file was used to verify the implementation.
+
+Test input:
+
+C:\Users\Rasika\BiasLess\tests\sample_audio.wav
+
+The speech-to-text component successfully loaded the faster-whisper model and produced a timestamped transcription.
+
+Example:
+
+[0.78s - 4.08s]
+Hello, my name is Rasika.
+
+Therefore, the local speech-to-text component has been successfully implemented and verified.
+
+
+33.2 Voice Activity Detection
+
+Voice Activity Detection has been implemented using:
+
+Silero VAD
+
+The purpose of the VAD component is to identify regions containing speech before passing them to the speech-to-text system.
+
+The implementation supports:
+
+- WAV audio input
+- Stereo-to-mono conversion
+- Sample-rate normalization
+- 48 kHz to 16 kHz resampling
+- Local Silero VAD inference
+- Timestamped speech-region detection
+
+The reusable implementation is:
+
+C:\Users\Rasika\BiasLess\backend\speech\vad.py
+
+The current VAD pipeline is:
+
+Input WAV
+    ↓
+Read PCM Audio
+    ↓
+Stereo → Mono
+    ↓
+Resample to 16 kHz
+    ↓
+Silero VAD
+    ↓
+Speech Timestamps
+
+
+33.3 VAD Verification
+
+The VAD component was tested using:
+
+C:\Users\Rasika\BiasLess\tests\sample_audio.wav
+
+The original sample audio was:
+
+- Stereo
+- 48 kHz
+- 16-bit PCM
+
+The VAD implementation automatically converted the audio to:
+
+- Mono
+- 16 kHz
+- Float audio representation
+
+The test successfully detected two speech-activity regions:
+
+Segment 1:
+1.12s - 4.13s
+Duration: 3.00s
+
+Segment 2:
+5.19s - 5.57s
+Duration: 0.38s
+
+This confirms that Silero VAD is successfully identifying speech regions from the input audio.
+
+The VAD component is therefore considered implemented and verified.
+
+The VAD output represents detected speech activity and does not by itself determine whether the detected audio contains meaningful debate content.
+
+
+33.4 Speech-to-Text and VAD Relationship
+
+The current speech components operate as separate verified modules.
+
+The intended integrated pipeline is:
+
+Audio
+    ↓
+Silero VAD
+    ↓
+Detected Speech Region
+    ↓
+Speech Segment Extraction
+    ↓
+faster-whisper
+    ↓
+Timestamped Text
+    ↓
+BiasLess NLP Engine
+
+This integration will prevent unnecessary transcription of silence or non-speech regions and will allow the NLP engine to process completed speech utterances.
+
+
+33.5 Speaker Handling
+
+The initial implementation will use separate microphones or input devices for Speaker A and Speaker B where practical.
+
+This approach provides a simpler method for associating detected speech with individual debate participants.
+
+The initial system does not require automatic speaker diarization.
+
+Automatic speaker diarization can be investigated as future enhancement after the core near-real-time pipeline is completed.
+
+
+33.6 Near-Real-Time Processing Strategy
+
+The system will process speech in short chunks rather than waiting until the complete debate has finished.
+
+The intended sequence is:
+
+Capture Audio
+        ↓
+Detect Speech
+        ↓
+Extract Speech Region
+        ↓
+Transcribe Speech
+        ↓
+Buffer Text
+        ↓
+Identify Completed Utterance
+        ↓
+Run BiasLess NLP Engine
+        ↓
+Generate Structured Analysis
+        ↓
+Send Result to Dashboard
+
+The system should therefore be described as a near-real-time debate analysis system.
+
+The term near-real-time is used because speech recognition and NLP processing require computational time and the system does not guarantee instantaneous analysis.
+
+
+34. Current Development Status
+
+At the current stage, the major text-based NLP development has been completed and the first speech-processing components have also been implemented and verified.
+
+
+Completed
+
+
+1. Dataset Preparation
+
+The following datasets have been prepared:
+
+- LOGIC Education
+- AAEC v2
+- Wikipedia Neutrality Corpus
+
+The following preprocessing tasks have been completed:
+
+- Dataset inspection
+- Text preprocessing
+- Duplicate investigation
+- Cross-split leakage checking
+- Dataset cleaning
+- Train/dev/test preservation where applicable
+
+
+2. Fallacy Detection
+
+Dataset:
+
+LOGIC Education
+
+Selected Model:
+
+Word + Character TF-IDF + Linear SVM
+
+Test Accuracy:
+
+57.34%
+
+Test Macro F1:
+
+52.72%
+
+
+3. Argument Component Detection
+
+Dataset:
+
+AAEC v2
+
+Selected Model:
+
+Word + Character TF-IDF + Linear SVM
+
+Test Accuracy:
+
+65.43%
+
+Test Macro F1:
+
+53.09%
+
+
+4. Bias-Aware Language Detection
+
+Dataset:
+
+Wikipedia Neutrality Corpus
+
+Selected Model:
+
+Word + Character TF-IDF + Linear SVM
+
+Test Accuracy:
+
+67.85%
+
+Test Macro F1:
+
+67.83%
+
+
+5. Sentiment Analysis
+
+Integrated locally using:
+
+cardiffnlp/twitter-roberta-base-sentiment-latest
+
+The component produces:
+
+- Positive
+- Neutral
+- Negative
+
+
+6. Named Entity Recognition
+
+Integrated locally using:
+
+dslim/bert-base-NER
+
+Custom entity-span post-processing has also been implemented.
+
+
+7. Evidence Extraction
+
+Implemented using:
+
+- Named Entity Recognition
+- Regular expressions
+- Source patterns
+- Statistical patterns
+- Date detection
+- Evidence indicators
+- Explainable scoring rules
+
+
+8. Argument Quality Analysis
+
+Implemented using:
+
+- Argument component prediction
+- Potential fallacy signals
+- Bias-associated wording signals
+- Sentiment intensity
+- Evidence presence
+- Specificity
+
+The output is an explainable 0–100 review-oriented score.
+
+
+9. Counterargument Generation
+
+Implemented using:
+
+- Fallacy-based response templates
+- Bias-aware signals
+- Evidence presence
+- Specificity
+- Argument-quality information
+
+The component runs locally and does not require a paid API or external LLM.
+
+
+10. Integrated NLP Engine
+
+All completed NLP modules have been integrated into:
+
+C:\Users\Rasika\BiasLess\backend\nlp\engine.py
+
+The engine has successfully been tested on multiple debate-style statements.
+
+The unified engine produces structured outputs containing:
+
+- Argument component
+- Fallacy signal
+- Bias-aware signal
+- Sentiment
+- Named entities
+- Evidence
+- Specificity
+- Argument quality
+- Counterargument
+
+
+11. Speech-to-Text
+
+Implemented using:
+
+faster-whisper
+
+Implementation:
+
+C:\Users\Rasika\BiasLess\backend\speech\transcriber.py
+
+The component has been successfully tested using sample_audio.wav.
+
+The test successfully produced timestamped speech transcription.
+
+
+12. Voice Activity Detection
+
+Implemented using:
+
+Silero VAD
+
+Implementation:
+
+C:\Users\Rasika\BiasLess\backend\speech\vad.py
+
+The component successfully detected speech regions from sample_audio.wav.
+
+Audio normalization from 48 kHz stereo WAV to 16 kHz mono audio was also successfully verified.
+
+
+35. Remaining Development Work
+
+The major remaining implementation stages are:
+
+1. VAD → faster-whisper integration
+
+The verified VAD and speech-to-text components need to be connected so that detected speech regions are automatically extracted and passed to faster-whisper.
+
+Planned flow:
+
+Audio
+    ↓
+Silero VAD
+    ↓
+Speech Segment
+    ↓
+faster-whisper
+    ↓
+Timestamped Text
+
+
+2. Speech-to-NLP Integration
+
+After speech transcription is completed, each completed utterance will be passed to:
+
+BiasLessNLPEngine.analyze()
+
+The intended flow is:
+
+Speech
+    ↓
+VAD
+    ↓
+Whisper
+    ↓
+Text Utterance
+    ↓
+BiasLess NLP Engine
+
+
+3. Audio Chunk and Utterance Buffering
+
+The system will process short audio chunks and maintain a text buffer.
+
+Completed sentences or utterances will be analyzed rather than processing every partial word.
+
+
+4. Speaker A / Speaker B Input Handling
+
+The initial implementation will support separate microphone or audio inputs for Speaker A and Speaker B.
+
+This avoids introducing automatic speaker diarization during the first complete integration.
+
+
+5. FastAPI Backend Integration
+
+The completed speech and NLP pipeline will be exposed through a FastAPI backend.
+
+The backend will coordinate:
+
+- Audio processing
+- Speech recognition
+- NLP analysis
+- Structured result generation
+
+
+6. WebSocket Communication
+
+WebSocket communication will be added to transmit analysis results to the frontend without requiring repeated HTTP polling.
+
+The planned flow is:
+
+Speech Processing
+        ↓
+BiasLess NLP Engine
+        ↓
+FastAPI
+        ↓
+WebSocket
+        ↓
+React Dashboard
+
+
+7. React Dashboard Development
+
+The frontend will display the analysis results in a real-time dashboard.
+
+Planned information includes:
+
+- Live transcript
+- Speaker
+- Argument component
+- Potential fallacy
+- Bias-aware language indicators
+- Sentiment
+- Evidence signals
+- Named entities
+- Argument quality score
+- Counterargument
+- Historical debate analysis
+
+
+8. Near-Real-Time End-to-End Integration
+
+All components will eventually be connected:
+
+Audio
+ ↓
+VAD
+ ↓
+Whisper
+ ↓
+NLP Engine
+ ↓
+FastAPI
+ ↓
+WebSocket
+ ↓
+React
+
+
+9. Complete System Testing
+
+The complete system will be tested using debate-style audio containing:
+
+- Claims
+- Evidence
+- Emotional statements
+- Potential fallacies
+- Loaded language
+- Multiple speakers
+
+
+10. End-to-End Performance Evaluation
+
+The final system will be evaluated for:
+
+- Speech-to-text processing time
+- NLP processing time
+- End-to-end latency
+- Speech detection behavior
+- Model outputs
+- Dashboard update time
+- System stability
+
+
+11. Final Documentation and Presentation
+
+The final stages will include:
+
+- System documentation
+- Architecture diagrams
+- Experimental results
+- Screenshots
+- Limitations
+- Future scope
+- Final presentation
+- Demonstration preparation
+
+
+The immediate next implementation stage is:
+
+VAD → faster-whisper Speech Pipeline Integration
+
+
+36. Current BiasLess Architecture
+
+The completed text-analysis architecture is:
+
+                        Debate Text
+                            ↓
+                 Argument Component Detection
+                            ↓
+                      Fallacy Detection
+                            ↓
+                Bias-Aware Language Detection
+                            ↓
+                     Sentiment Analysis
+                            ↓
+                  Named Entity Recognition
+                            ↓
+                    Evidence Extraction
+                            ↓
+                    Specificity Analysis
+                            ↓
+                  Argument Quality Analysis
+                            ↓
+                 Counterargument Generation
+                            ↓
+                   Structured NLP Result
+
+
+The currently completed speech components are:
+
+                        Audio
+                          ↓
+                   Silero VAD
+                          ↓
+              Detected Speech Regions
+                          ↓
+                 faster-whisper
+                          ↓
+              Timestamped Transcription
+
+
+The next integration step is to connect these two pipelines:
+
+                         Audio
+                           ↓
+                      Silero VAD
+                           ↓
+                  Speech Segment
+                           ↓
+                    faster-whisper
+                           ↓
+                  Text Utterance
+                           ↓
+                BiasLess NLP Engine
+                           ↓
+              Structured NLP Analysis
+                           ↓
+                  FastAPI + WebSocket
+                           ↓
+                   React Dashboard
+                           ↓
+                    Final Report
+
+
+37. Current Limitations
+
+The current implementation has several limitations that should be explicitly acknowledged.
+
+The fallacy classifier achieved 57.34% test accuracy and 52.72% Macro F1. Therefore, its predictions may contain false positives and false negatives.
+
+The argument-component classifier performs substantially better on Premise detection than on Claim and MajorClaim classification.
+
+The WNC classifier identifies wording patterns associated with Wikipedia neutrality revisions. Its output should not be interpreted as objective proof that a person or statement is biased.
+
+The sentiment model is a pretrained general-purpose supporting component and has not been evaluated on a dedicated BiasLess debate sentiment test set.
+
+The NER model is pretrained and has not been fine-tuned specifically for debate transcripts.
+
+The Evidence Presence Score detects linguistic evidence signals but does not verify whether a claim, statistic, source, or statement is factually correct.
+
+The Argument Quality Score is an explainable heuristic score rather than a learned objective measurement of argument quality.
+
+The SVM Decision Strength values are transformations of decision margins and are not calibrated probabilities.
+
+The counterargument generator is currently template-based, so its responses are more controlled and explainable but less flexible than responses generated by a large language model.
+
+The current VAD implementation has been verified on WAV audio input. Browser microphone streaming and continuous chunk-based processing have not yet been integrated.
+
+The faster-whisper component has been verified independently on sample audio, but the complete VAD → speech-segment extraction → Whisper → NLP pipeline is still under integration.
+
+Automatic speaker diarization has not yet been implemented.
+
+FastAPI, WebSocket communication, and the React dashboard have not yet been integrated with the speech pipeline.
+
+These limitations are important because BiasLess is designed as an assistive debate-analysis system rather than an automated authority on argument correctness.
+
+
+38. Conclusion
+
+The current BiasLess implementation has completed the main text-based NLP pipeline and integrated the individual NLP components into a unified analysis engine.
+
+Three custom-trained machine-learning classifiers have been developed.
+
+For LOGIC Education, the selected Word + Character TF-IDF Linear SVM achieved:
+
+57.34% Test Accuracy
+52.72% Macro F1
+
+
+For AAEC v2, the selected Word + Character TF-IDF Linear SVM achieved:
+
+65.43% Test Accuracy
+53.09% Macro F1
+
+
+For the Wikipedia Neutrality Corpus, the selected Word + Character TF-IDF Linear SVM achieved:
+
+67.85% Test Accuracy
+67.83% Macro F1
+
+
+Sentiment analysis has been integrated using:
+
+cardiffnlp/twitter-roberta-base-sentiment-latest
+
+
+Named Entity Recognition has been integrated using:
+
+dslim/bert-base-NER
+
+with custom entity-span post-processing.
+
+
+Evidence extraction has been implemented using:
+
+- Named Entity Recognition
+- Source-pattern detection
+- Statistical-pattern detection
+- Date detection
+- Evidence-indicator matching
+- Explainable evidence-presence scoring
+
+
+Argument-quality analysis has been implemented as an explainable heuristic layer combining:
+
+- Argument component prediction
+- Potential fallacy signals
+- Bias-associated wording signals
+- Sentiment intensity
+- Evidence presence
+- Specificity
+
+
+Counterargument generation has also been implemented as a local explainable rule-based component using:
+
+- Fallacy signals
+- Bias-aware signals
+- Evidence presence
+- Specificity
+- Argument-quality information
+
+
+Finally, the completed text-processing components have been integrated into:
+
+BiasLessNLPEngine
+
+
+The speech-processing stage has also begun successfully.
+
+faster-whisper has been implemented and successfully tested for local speech-to-text transcription.
+
+Silero VAD has been implemented and successfully tested for detecting speech regions.
+
+The current verified speech components are:
+
+Audio
+    ↓
+Silero VAD
+    ↓
+Speech Regions
+
+and:
+
+Audio
+    ↓
+faster-whisper
+    ↓
+Timestamped Transcription
+
+
+The next development stage is to integrate these verified components into one continuous speech pipeline:
+
+Audio
+    ↓
+Silero VAD
+    ↓
+Speech Segment Extraction
+    ↓
+faster-whisper
+    ↓
+Completed Text Utterance
+    ↓
+BiasLessNLPEngine
+    ↓
+Structured Analysis
+
+
+This will then be connected to:
+
+FastAPI
+    ↓
+WebSocket
+    ↓
+React Dashboard
+
+
+The final goal is a near-real-time debate analysis system capable of transforming spoken debate into structured and explainable analytical feedback.
+
+BiasLess is designed as an assistive and explainable debate-analysis system. Its classifier outputs, decision-strength indicators, evidence signals, argument-quality scores, and counterarguments should be interpreted as analytical assistance rather than unquestionable judgments about a speaker, claim, or argument.
